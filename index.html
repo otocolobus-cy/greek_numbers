@@ -71,7 +71,7 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
 /* range slider */
 .rangebox{
   background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:12px 16px 8px; margin-bottom:16px; box-shadow:var(--shadow);
+  padding:12px 16px; margin-bottom:16px; box-shadow:var(--shadow);
 }
 .rrow{display:flex; align-items:center; gap:10px;}
 .rnum{
@@ -83,7 +83,8 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
 #cards-max-num,#write-max-num,#read-max-num{text-align:right;}
 .rnum:focus{border-color:var(--accent);}
 .rnum.bad{border-color:var(--err);}
-.rerr{color:var(--err); font-size:.78rem; min-height:1.1em; margin-top:3px;}
+.rerr{color:var(--err); font-size:.78rem; margin-top:6px;}
+.rerr:empty{display:none;} /* пустая строка ошибки не занимает место */
 /* двуручковый слайдер: два range-инпута на одном треке */
 .dual{position:relative; flex:1; min-width:0; height:34px;}
 .dual .track,.dual .fill{
@@ -208,6 +209,13 @@ body.tts .refitem{cursor:pointer;}
 @keyframes fall{to{transform:translateY(120px) rotate(200deg); opacity:0;}}
 @media (max-width:420px){
   .face .num{font-size:2rem;} .quizcard .qnum{font-size:1.9rem;} .quizcard .qtext{font-size:1.2rem;}
+}
+/* iOS зумит к полю ввода, если шрифт в нем меньше 16px — на сенсорных
+   устройствах держим все текстовые поля не мельче этого порога */
+@media (hover:none) and (pointer:coarse){
+  /* 70px на телефоне в портрете, плавно до 112px на ландшафте и планшетах */
+  .rnum{font-size:16px; width:clamp(70px, 18vw, 112px); padding:6px 7px;}
+  input.ans{font-size:16px;}
 }
 </style>
 </head>
@@ -540,6 +548,25 @@ function nearestIdx(steps, v, roundUp){
   for(let i=0;i<steps.length;i++) if(steps[i]<=v) idx=i;
   return idx;
 }
+/* Если число не помещается в поле, ужимаем шрифт — но только пока поле
+   не в фокусе. Перед фокусом (pointerdown) возвращаем базовый размер,
+   чтобы iOS не приближал страницу. */
+function fitRnum(el){
+  if(document.activeElement === el || !el.clientWidth) return;
+  el.style.fontSize = "";
+  if(el.scrollWidth > el.clientWidth){
+    const base = parseFloat(getComputedStyle(el).fontSize);
+    const f = Math.max(9, Math.floor(base * el.clientWidth / el.scrollWidth) - 1);
+    el.style.fontSize = f + "px";
+  }
+}
+document.querySelectorAll(".rnum").forEach(el=>{
+  el.addEventListener("pointerdown", ()=>{ el.style.fontSize = ""; });
+  el.addEventListener("focus", ()=>{ el.style.fontSize = ""; });
+  el.addEventListener("blur", ()=> fitRnum(el));
+});
+window.addEventListener("resize", ()=> document.querySelectorAll(".rnum").forEach(fitRnum));
+
 function updateDual(mode){
   const minSl = $(mode+"-min-slider"), maxSl = $(mode+"-max-slider");
   const n = STEPS_ALL.length-1;
@@ -563,6 +590,8 @@ function syncRangeUI(mode){
   $(mode+"-min-num").classList.remove("bad");
   $(mode+"-max-num").classList.remove("bad");
   $(mode+"-rerr").textContent = "";
+  fitRnum($(mode+"-min-num"));
+  fitRnum($(mode+"-max-num"));
 }
 function parseBound(raw){
   const s = String(raw).replace(/\s+/g,"");
@@ -603,11 +632,13 @@ function initRange(mode){
   minSl.oninput = ()=>{
     if(+minSl.value > +maxSl.value) minSl.value = maxSl.value;
     minNum.value = STEPS_ALL[minSl.value];
+    fitRnum(minNum);
     updateDual(mode);
   };
   maxSl.oninput = ()=>{
     if(+maxSl.value < +minSl.value) maxSl.value = minSl.value;
     maxNum.value = STEPS_ALL[maxSl.value];
+    fitRnum(maxNum);
     updateDual(mode);
   };
   minSl.onchange = maxSl.onchange = ()=> applyRange(mode);
