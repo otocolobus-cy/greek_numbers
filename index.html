@@ -71,7 +71,7 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
 /* range slider */
 .rangebox{
   background:var(--card); border:1px solid var(--border); border-radius:14px;
-  padding:12px 16px 8px; margin-bottom:16px; box-shadow:var(--shadow);
+  padding:12px 16px; margin-bottom:16px; box-shadow:var(--shadow);
 }
 .rrow{display:flex; align-items:center; gap:10px;}
 .rnum{
@@ -83,7 +83,8 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
 #cards-max-num,#write-max-num,#read-max-num{text-align:right;}
 .rnum:focus{border-color:var(--accent);}
 .rnum.bad{border-color:var(--err);}
-.rerr{color:var(--err); font-size:.78rem; min-height:1.1em; margin-top:3px;}
+.rerr{color:var(--err); font-size:.78rem; margin-top:6px;}
+.rerr:empty{display:none;} /* пустая строка ошибки не занимает место */
 /* двуручковый слайдер: два range-инпута на одном треке */
 .dual{position:relative; flex:1; min-width:0; height:34px;}
 .dual .track,.dual .fill{
