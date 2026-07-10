@@ -605,11 +605,17 @@ $("conv-input").addEventListener("input", ()=>{
 });
 
 /* ================= KEYBOARD ================= */
-$("w-input").addEventListener("keydown", e=>{
-  if(e.key==="Enter"){ state.write.done ? nextWrite() : checkWrite(); }
-});
-$("r-input").addEventListener("keydown", e=>{
-  if(e.key==="Enter"){ state.read.done ? nextRead() : checkRead(); }
+/* Единый обработчик Enter: до ответа — проверка, после (в т.ч. когда поле
+   заблокировано и фокус потерян) — кнопка «Дальше» */
+document.addEventListener("keydown", e=>{
+  if(e.key!=="Enter") return;
+  if($("scr-write").classList.contains("active")){
+    e.preventDefault();
+    state.write.done ? nextWrite() : checkWrite();
+  }else if($("scr-read").classList.contains("active")){
+    e.preventDefault();
+    state.read.done ? nextRead() : checkRead();
+  }
 });
 
 /* ================= THEME ================= */
