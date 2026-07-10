@@ -70,11 +70,43 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
   background:var(--card); border:1px solid var(--border); border-radius:14px;
   padding:12px 16px 8px; margin-bottom:16px; box-shadow:var(--shadow);
 }
-.rangelab{font-size:.85rem; color:var(--muted); margin-bottom:6px;}
-.rangelab b{color:var(--text);}
-input[type=range].slider{
-  width:100%; accent-color:var(--accent); height:32px; margin:0; cursor:pointer;
-  touch-action:pan-x; background:transparent;
+.rrow{display:flex; align-items:center; gap:10px;}
+.rnum{
+  width:100px; flex-shrink:0; padding:7px 8px;
+  border:1px solid var(--border); border-radius:8px;
+  background:var(--bg); color:var(--text); font:inherit; font-size:.85rem; outline:none;
+}
+#cards-min-num,#write-min-num,#read-min-num{text-align:left;}
+#cards-max-num,#write-max-num,#read-max-num{text-align:right;}
+.rnum:focus{border-color:var(--accent);}
+.rnum.bad{border-color:var(--err);}
+.rerr{color:var(--err); font-size:.78rem; min-height:1.1em; margin-top:3px;}
+/* двуручковый слайдер: два range-инпута на одном треке */
+.dual{position:relative; flex:1; min-width:0; height:34px;}
+.dual .track,.dual .fill{
+  position:absolute; top:50%; transform:translateY(-50%);
+  height:5px; border-radius:3px;
+}
+.dual .track{left:0; right:0; background:var(--chipbg);}
+.dual .fill{background:var(--accent);}
+.dual input[type=range]{
+  position:absolute; left:0; top:0; width:100%; height:34px; margin:0; padding:0;
+  -webkit-appearance:none; appearance:none; background:none; outline:none;
+  pointer-events:none; touch-action:none;
+}
+.dual input[type=range]::-webkit-slider-runnable-track{height:34px; background:none; border:none;}
+.dual input[type=range]::-moz-range-track{background:none; border:none;}
+.dual input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none; appearance:none; pointer-events:auto; cursor:pointer;
+  width:22px; height:22px; border-radius:50%; margin-top:6px;
+  background:var(--accent); border:3px solid var(--card);
+  box-shadow:0 1px 5px rgba(0,0,0,.3);
+}
+.dual input[type=range]::-moz-range-thumb{
+  pointer-events:auto; cursor:pointer;
+  width:16px; height:16px; border-radius:50%;
+  background:var(--accent); border:3px solid var(--card);
+  box-shadow:0 1px 5px rgba(0,0,0,.3);
 }
 
 /* flip card */
@@ -196,8 +228,16 @@ input.ans.right{border-color:var(--ok);}
     </div>
     <div class="score">Показано: <b id="c-shown">0</b></div>
     <div class="rangebox">
-      <div class="rangelab">Диапазон: <b id="cards-rangeval"></b></div>
-      <input type="range" class="slider" id="cards-slider" min="0" max="8" step="1">
+      <div class="rrow">
+        <input type="text" class="rnum" id="cards-min-num" inputmode="numeric" autocomplete="off">
+        <div class="dual">
+          <div class="track"></div><div class="fill" id="cards-fill"></div>
+          <input type="range" id="cards-min-slider" min="0" max="10" step="1">
+          <input type="range" id="cards-max-slider" min="0" max="10" step="1">
+        </div>
+        <input type="text" class="rnum" id="cards-max-num" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="rerr" id="cards-rerr"></div>
     </div>
     <div class="flipzone">
       <div class="flipcard" id="flipcard" onclick="flipCard()">
@@ -223,8 +263,16 @@ input.ans.right{border-color:var(--ok);}
     </div>
     <div class="score">Показано: <b id="w-shown">0</b> · Правильно: <b id="w-correct">0</b> · Ошибки: <b id="w-errors">0</b></div>
     <div class="rangebox">
-      <div class="rangelab">Диапазон: <b id="write-rangeval"></b></div>
-      <input type="range" class="slider" id="write-slider" min="0" max="8" step="1">
+      <div class="rrow">
+        <input type="text" class="rnum" id="write-min-num" inputmode="numeric" autocomplete="off">
+        <div class="dual">
+          <div class="track"></div><div class="fill" id="write-fill"></div>
+          <input type="range" id="write-min-slider" min="0" max="10" step="1">
+          <input type="range" id="write-max-slider" min="0" max="10" step="1">
+        </div>
+        <input type="text" class="rnum" id="write-max-num" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="rerr" id="write-rerr"></div>
     </div>
     <div class="quizcard">
       <div class="qnum" id="w-num"></div>
@@ -250,8 +298,16 @@ input.ans.right{border-color:var(--ok);}
     </div>
     <div class="score">Показано: <b id="r-shown">0</b> · Правильно: <b id="r-correct">0</b> · Ошибки: <b id="r-errors">0</b></div>
     <div class="rangebox">
-      <div class="rangelab">Диапазон: <b id="read-rangeval"></b></div>
-      <input type="range" class="slider" id="read-slider" min="0" max="8" step="1">
+      <div class="rrow">
+        <input type="text" class="rnum" id="read-min-num" inputmode="numeric" autocomplete="off">
+        <div class="dual">
+          <div class="track"></div><div class="fill" id="read-fill"></div>
+          <input type="range" id="read-min-slider" min="0" max="10" step="1">
+          <input type="range" id="read-max-slider" min="0" max="10" step="1">
+        </div>
+        <input type="text" class="rnum" id="read-max-num" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="rerr" id="read-rerr"></div>
     </div>
     <div class="quizcard">
       <div class="qtext" id="r-text"></div>
@@ -354,26 +410,27 @@ function checkGreekAnswer(input, n){
 
 /* ================= APP STATE / HELPERS ================= */
 const $ = id => document.getElementById(id);
-const STEPS = [20,100,1000,10000,100000,1000000,10000000,100000000,1000000000];
-const STEP_LABELS = ["0–20","0–100","0–1000","0–10 тыс.","0–100 тыс.","0–1 млн","0–10 млн","0–100 млн","0–1 млрд"];
+const MAX_N = 1000000000;
+const STEPS_ALL = [0,10,20,100,1000,10000,100000,1000000,10000000,100000000,1000000000];
 const state = {
-  cards:{range:1, num:0, shown:0},
-  write:{range:1, num:0, shown:0, correct:0, errors:0, done:false},
-  read:{range:1, num:0, shown:0, correct:0, errors:0, done:false}
+  cards:{min:0, max:100, num:0, shown:0},
+  write:{min:0, max:100, num:0, shown:0, correct:0, errors:0, done:false},
+  read:{min:0, max:100, num:0, shown:0, correct:0, errors:0, done:false}
 };
 
-function randomNumber(max){
-  // Buckets by digit count for variety of magnitudes; a partially filled
-  // top bucket gets proportionally lower weight (sqrt-softened), so edge
-  // numbers like exactly 100 or 1000 don't get inflated probability.
+function randomNumber(min, max){
+  // Buckets by digit count for variety of magnitudes; partially filled
+  // buckets (cut by min or max) get proportionally lower weight
+  // (sqrt-softened), so edge numbers don't get inflated probability.
+  if(min >= max) return min;
   const buckets = [];
   for(let d=1;;d++){
-    const lo = d===1 ? 0 : Math.pow(10, d-1);
-    if(lo > max) break;
-    const full = Math.pow(10, d)-1;
-    const hi = Math.min(full, max);
-    buckets.push({lo, hi, w: Math.sqrt((hi-lo+1)/(full-lo+1))});
-    if(hi === max) break;
+    const blo = d===1 ? 0 : Math.pow(10, d-1);
+    if(blo > max) break;
+    const bhi = Math.pow(10, d)-1;
+    const lo = Math.max(blo, min), hi = Math.min(bhi, max);
+    if(lo <= hi) buckets.push({lo, hi, w: Math.sqrt((hi-lo+1)/(bhi-blo+1))});
+    if(bhi >= max) break;
   }
   const total = buckets.reduce((s,b)=>s+b.w, 0);
   let r = Math.random()*total;
@@ -381,29 +438,96 @@ function randomNumber(max){
     if(r < b.w) return b.lo + Math.floor(Math.random()*(b.hi-b.lo+1));
     r -= b.w;
   }
-  return Math.floor(Math.random()*(max+1));
+  return min + Math.floor(Math.random()*(max-min+1));
 }
 function newNumber(mode){
   const st = state[mode];
   let n, guard=0;
-  do{ n = randomNumber(STEPS[st.range]); } while(n===st.num && ++guard<10);
+  do{ n = randomNumber(st.min, st.max); } while(n===st.num && ++guard<10);
   st.num = n;
   return n;
 }
 function fmt(n){ return n.toLocaleString("ru-RU"); }
 
-function initSlider(mode){
-  const sl = $(mode+"-slider"), lab = $(mode+"-rangeval");
-  sl.value = state[mode].range;
-  lab.textContent = STEP_LABELS[state[mode].range];
-  sl.oninput = ()=>{ lab.textContent = STEP_LABELS[sl.value]; };
-  sl.onchange = ()=>{
-    if(state[mode].range === +sl.value) return;
-    state[mode].range = +sl.value;
-    if(mode==="cards") nextCard();
-    if(mode==="write") nextWrite();
-    if(mode==="read") nextRead();
+function nearestIdx(steps, v, roundUp){
+  if(roundUp){
+    for(let i=0;i<steps.length;i++) if(steps[i]>=v) return i;
+    return steps.length-1;
+  }
+  let idx=0;
+  for(let i=0;i<steps.length;i++) if(steps[i]<=v) idx=i;
+  return idx;
+}
+function updateDual(mode){
+  const minSl = $(mode+"-min-slider"), maxSl = $(mode+"-max-slider");
+  const n = STEPS_ALL.length-1;
+  const fill = $(mode+"-fill");
+  fill.style.left = (minSl.value/n*100)+"%";
+  fill.style.right = (100 - maxSl.value/n*100)+"%";
+  // если оба ползунка в правой половине, нижний должен быть кликабелен поверх
+  minSl.style.zIndex = +minSl.value > n/2 ? 5 : 3;
+  maxSl.style.zIndex = 4;
+}
+function syncRangeUI(mode){
+  const st = state[mode];
+  $(mode+"-min-num").value = st.min;
+  $(mode+"-max-num").value = st.max;
+  let lo = nearestIdx(STEPS_ALL, st.min, false);
+  let hi = nearestIdx(STEPS_ALL, st.max, true);
+  if(lo > hi) lo = hi;
+  $(mode+"-min-slider").value = lo;
+  $(mode+"-max-slider").value = hi;
+  updateDual(mode);
+  $(mode+"-min-num").classList.remove("bad");
+  $(mode+"-max-num").classList.remove("bad");
+  $(mode+"-rerr").textContent = "";
+}
+function parseBound(raw){
+  const s = String(raw).replace(/\s+/g,"");
+  if(!/^\d+$/.test(s)) return null; // отсекает пустое, не-числа и отрицательные
+  const n = parseInt(s,10);
+  return n > MAX_N ? null : n;
+}
+function applyRange(mode){
+  const minEl = $(mode+"-min-num"), maxEl = $(mode+"-max-num"), err = $(mode+"-rerr");
+  const mn = parseBound(minEl.value), mx = parseBound(maxEl.value);
+  minEl.classList.toggle("bad", mn===null);
+  maxEl.classList.toggle("bad", mx===null);
+  if(mn===null || mx===null){
+    err.textContent = "Введи целое число от 0 до 1 000 000 000";
+    return;
+  }
+  if(mn > mx){
+    minEl.classList.add("bad"); maxEl.classList.add("bad");
+    err.textContent = "«От» не может быть больше, чем «До»";
+    return;
+  }
+  const st = state[mode];
+  const changed = st.min!==mn || st.max!==mx;
+  st.min = mn; st.max = mx;
+  syncRangeUI(mode);
+  if(!changed) return;
+  // новое число без учета в статистике показов
+  if(mode==="cards") nextCard(false);
+  else if(mode==="write") nextWrite(false);
+  else nextRead(false);
+}
+function initRange(mode){
+  syncRangeUI(mode);
+  const minSl = $(mode+"-min-slider"), maxSl = $(mode+"-max-slider");
+  const minNum = $(mode+"-min-num"), maxNum = $(mode+"-max-num");
+  minSl.oninput = ()=>{
+    if(+minSl.value > +maxSl.value) minSl.value = maxSl.value;
+    minNum.value = STEPS_ALL[minSl.value];
+    updateDual(mode);
   };
+  maxSl.oninput = ()=>{
+    if(+maxSl.value < +minSl.value) maxSl.value = minSl.value;
+    maxNum.value = STEPS_ALL[maxSl.value];
+    updateDual(mode);
+  };
+  minSl.onchange = maxSl.onchange = ()=> applyRange(mode);
+  minNum.onchange = maxNum.onchange = ()=> applyRange(mode);
 }
 
 /* ================= NAVIGATION ================= */
@@ -414,17 +538,17 @@ function show(id){
 function openMode(mode){
   if(mode==="cards"){
     state.cards.shown=0;
-    initSlider("cards");
+    initRange("cards");
     show("scr-cards");
     nextCard();
   }else if(mode==="write"){
     state.write.shown=0; state.write.correct=0; state.write.errors=0;
-    initSlider("write");
+    initRange("write");
     show("scr-write");
     nextWrite();
   }else if(mode==="read"){
     state.read.shown=0; state.read.correct=0; state.read.errors=0;
-    initSlider("read");
+    initRange("read");
     show("scr-read");
     nextRead();
   }
@@ -438,9 +562,9 @@ function exitMode(){
 }
 
 /* ================= CARDS MODE ================= */
-function nextCard(){
+function nextCard(count){
   const n = newNumber("cards");
-  state.cards.shown++;
+  if(count !== false) state.cards.shown++;
   $("c-shown").textContent = state.cards.shown;
   const card = $("flipcard");
   card.classList.remove("flipped");
@@ -474,9 +598,10 @@ function resetQuizUI(p){
   $(p+"-show").classList.add("hiddenbtn");
   $(p+"-next").classList.add("hiddenbtn");
 }
-function nextWrite(){
+function nextWrite(count){
   const n = newNumber("write");
-  state.write.shown++; state.write.done=false;
+  if(count !== false) state.write.shown++;
+  state.write.done=false;
   updateScore("write");
   resetQuizUI("w");
   $("w-num").textContent = fmt(n);
@@ -515,9 +640,10 @@ function revealWrite(){
 }
 
 /* ================= READ MODE ================= */
-function nextRead(){
+function nextRead(count){
   const n = newNumber("read");
-  state.read.shown++; state.read.done=false;
+  if(count !== false) state.read.shown++;
+  state.read.done=false;
   updateScore("read");
   resetQuizUI("r");
   $("r-text").textContent = greekNumber(n);
@@ -608,7 +734,23 @@ $("conv-input").addEventListener("input", ()=>{
 /* Единый обработчик Enter: до ответа — проверка, после (в т.ч. когда поле
    заблокировано и фокус потерян) — кнопка «Дальше» */
 document.addEventListener("keydown", e=>{
-  if(e.key!=="Enter") return;
+  const isEnter = e.key==="Enter", isSpace = e.key===" ";
+  if(!isEnter && !isSpace) return;
+  // Enter в полях диапазона — применить границы, не трогая проверку ответа
+  if(isEnter && e.target && e.target.classList && e.target.classList.contains("rnum")){
+    e.preventDefault();
+    e.target.blur();
+    return;
+  }
+  // Карточки: Enter или Space — переворот, затем «Дальше»
+  if($("scr-cards").classList.contains("active")){
+    if(e.target && e.target.tagName==="INPUT") return; // поля и слайдеры диапазона
+    e.preventDefault(); // Space не должен скроллить страницу
+    if($("flipcard").classList.contains("flipped")) nextCard();
+    else flipCard();
+    return;
+  }
+  if(!isEnter) return; // в остальных режимах Space работает как обычно
   if($("scr-write").classList.contains("active")){
     e.preventDefault();
     state.write.done ? nextWrite() : checkWrite();
