@@ -51,6 +51,9 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
   transition:transform .12s, border-color .12s; font:inherit;
 }
 .menubtn:active{transform:scale(.98);}
+.menubtn:disabled{opacity:.45; cursor:not-allowed;}
+.menubtn:disabled:active{transform:none;}
+.menunote{color:var(--muted); font-size:.78rem; margin:-8px 6px 0; display:none;}
 .menubtn .emoji{font-size:1.9rem;}
 .menubtn .t{font-size:1.05rem; font-weight:700;}
 .menubtn .d{color:var(--muted); font-size:.83rem; margin-top:2px;}
@@ -181,6 +184,17 @@ input.ans.right{border-color:var(--ok);}
 .refitem .n{font-weight:700; color:var(--muted); white-space:nowrap;}
 .refitem .g{color:var(--text);}
 .refitem.wide{column-span:all;}
+/* аудирование */
+.playbtn{
+  width:76px; height:76px; border-radius:50%; border:none;
+  background:var(--accent); color:#fff; font-size:2rem; cursor:pointer;
+  box-shadow:var(--shadow); transition:transform .1s;
+}
+.playbtn:active{transform:scale(.93);}
+.raterow{display:flex; align-items:center; gap:12px; margin-top:6px; padding-top:8px; border-top:1px solid var(--border);}
+.ratelab{font-size:.85rem; color:var(--muted); white-space:nowrap;}
+.ratelab b{color:var(--text);}
+.raterow input[type=range]{flex:1; min-width:0; accent-color:var(--accent); height:28px; margin:0; cursor:pointer;}
 /* кнопка озвучки: видна только когда в системе найден греческий голос */
 .speakbtn{
   display:none; border:none; background:var(--chipbg); color:var(--text);
@@ -222,6 +236,11 @@ body.tts .refitem{cursor:pointer;}
         <span class="emoji">✍️</span>
         <span><span class="t">Письмо</span><br><span class="d">Напиши число по-гречески</span></span>
       </button>
+      <button class="menubtn" id="listenMenuBtn" onclick="openMode('listen')">
+        <span class="emoji">🎧</span>
+        <span><span class="t">Аудирование</span><br><span class="d">Услышь число по-гречески и введи цифрами</span></span>
+      </button>
+      <div class="menunote" id="voiceNote">Это устройство не поддерживает синтез речи на греческом языке</div>
       <button class="menubtn" onclick="openRef()">
         <span class="emoji">📖</span>
         <span><span class="t">Справочник</span><br><span class="d">Таблица правил и переводчик чисел</span></span>
@@ -297,6 +316,45 @@ body.tts .refitem{cursor:pointer;}
         <button class="btn ghost hiddenbtn" id="w-show" onclick="revealWrite()">Показать ответ</button>
         <button class="speakbtn hiddenbtn" id="w-speak" title="Озвучить" onclick="speakNum('write')">🔊</button>
         <button class="btn primary hiddenbtn" id="w-next" onclick="nextWrite()">Дальше →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LISTEN -->
+  <div class="screen" id="scr-listen">
+    <div class="modebar">
+      <div class="modetitle">🎧 Аудирование</div>
+      <button class="exitbtn" onclick="exitMode()">✕ Завершить</button>
+    </div>
+    <div class="score">Показано: <b id="l-shown">0</b> · Правильно: <b id="l-correct">0</b> · Ошибки: <b id="l-errors">0</b></div>
+    <div class="rangebox">
+      <div class="rrow">
+        <input type="text" class="rnum" id="listen-min-num" inputmode="numeric" autocomplete="off">
+        <div class="dual">
+          <div class="track"></div><div class="fill" id="listen-fill"></div>
+          <input type="range" id="listen-min-slider" min="0" max="10" step="1">
+          <input type="range" id="listen-max-slider" min="0" max="10" step="1">
+        </div>
+        <input type="text" class="rnum" id="listen-max-num" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="rerr" id="listen-rerr"></div>
+      <div class="raterow">
+        <span class="ratelab">Скорость: <b id="l-rateval">0.9×</b></span>
+        <input type="range" id="l-rate" min="0.5" max="2" step="0.05" value="0.9">
+      </div>
+    </div>
+    <div class="quizcard">
+      <button class="playbtn" onclick="speakNum('listen')" title="Прослушать еще раз">🔊</button>
+      <div class="answer-row">
+        <input class="ans" id="l-input" inputmode="numeric" placeholder="введи цифрами…"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="feedback" id="l-fb"></div>
+      <div class="revealed" id="l-reveal"></div>
+      <div class="btnrow">
+        <button class="btn primary" id="l-check" onclick="checkListen()">Проверить</button>
+        <button class="btn ghost hiddenbtn" id="l-show" onclick="revealListen()">Показать ответ</button>
+        <button class="btn primary hiddenbtn" id="l-next" onclick="nextListen()">Дальше →</button>
       </div>
     </div>
   </div>
@@ -430,13 +488,15 @@ const STEPS_ALL = [0,10,20,100,1000,10000,100000,1000000,10000000,100000000,1000
 const state = {
   cards:{min:0, max:100, num:0, shown:0},
   write:{min:0, max:100, num:0, shown:0, correct:0, errors:0, done:false},
+  listen:{min:0, max:100, num:0, shown:0, correct:0, errors:0, done:false},
   read:{min:0, max:100, num:0, shown:0, correct:0, errors:0, done:false}
 };
 
 function randomNumber(min, max){
-  // Buckets by digit count for variety of magnitudes; partially filled
-  // buckets (cut by min or max) get proportionally lower weight
-  // (sqrt-softened), so edge numbers don't get inflated probability.
+  // Вес корзины-декады = size / sqrt(fullDecadeSize): компромисс между
+  // «поровну каждой декаде» (маленькие числа слишком часто) и честной
+  // равномерностью (в больших диапазонах только огромные числа).
+  // Обрезанные краями корзины автоматически получают меньший вес.
   if(min >= max) return min;
   const buckets = [];
   for(let d=1;;d++){
@@ -444,7 +504,7 @@ function randomNumber(min, max){
     if(blo > max) break;
     const bhi = Math.pow(10, d)-1;
     const lo = Math.max(blo, min), hi = Math.min(bhi, max);
-    if(lo <= hi) buckets.push({lo, hi, w: Math.sqrt((hi-lo+1)/(bhi-blo+1))});
+    if(lo <= hi) buckets.push({lo, hi, w: (hi-lo+1)/Math.sqrt(bhi-blo+1)});
     if(bhi >= max) break;
   }
   const total = buckets.reduce((s,b)=>s+b.w, 0);
@@ -457,8 +517,14 @@ function randomNumber(min, max){
 }
 function newNumber(mode){
   const st = state[mode];
-  let n, guard=0;
-  do{ n = randomNumber(st.min, st.max); } while(n===st.num && ++guard<10);
+  if(!st.hist) st.hist = [];
+  // не выдавать числа, встречавшиеся в последних 5 показах (если диапазон позволяет)
+  const k = Math.min(5, st.max - st.min, st.hist.length);
+  const recent = k > 0 ? st.hist.slice(-k) : [];
+  let n, guard = 0;
+  do{ n = randomNumber(st.min, st.max); } while(recent.includes(n) && ++guard < 20);
+  st.hist.push(n);
+  if(st.hist.length > 10) st.hist.shift();
   st.num = n;
   if("speechSynthesis" in window) speechSynthesis.cancel(); // не дочитывать прошлое число
   return n;
@@ -526,6 +592,7 @@ function applyRange(mode){
   // новое число без учета в статистике показов
   if(mode==="cards") nextCard(false);
   else if(mode==="write") nextWrite(false);
+  else if(mode==="listen") nextListen(false);
   else nextRead(false);
 }
 function initRange(mode){
@@ -552,22 +619,30 @@ function pickGreekVoice(){
   const vs = speechSynthesis.getVoices();
   greekVoice = vs.find(v => /^el([-_]|$)/i.test(v.lang)) || null;
   document.body.classList.toggle("tts", !!greekVoice);
+  $("listenMenuBtn").disabled = !greekVoice;
+  $("voiceNote").style.display = greekVoice ? "none" : "block";
 }
 if("speechSynthesis" in window){
   pickGreekVoice();
   // список голосов подгружается асинхронно
   speechSynthesis.onvoiceschanged = pickGreekVoice;
+}else{
+  $("listenMenuBtn").disabled = true;
+  $("voiceNote").style.display = "block";
 }
-function speak(text){
+let listenRate = 0.9;
+function speak(text, rate){
   if(!greekVoice || !text) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text);
   u.voice = greekVoice;
   u.lang = greekVoice.lang;
-  u.rate = 0.9;
+  u.rate = rate || 0.9;
   speechSynthesis.speak(u);
 }
-function speakNum(mode){ speak(greekNumber(state[mode].num)); }
+function speakNum(mode){
+  speak(greekNumber(state[mode].num), mode==="listen" ? listenRate : undefined);
+}
 
 /* ================= NAVIGATION ================= */
 function show(id){
@@ -585,6 +660,11 @@ function openMode(mode){
     initRange("write");
     show("scr-write");
     nextWrite();
+  }else if(mode==="listen"){
+    state.listen.shown=0; state.listen.correct=0; state.listen.errors=0;
+    initRange("listen");
+    show("scr-listen");
+    nextListen();
   }else if(mode==="read"){
     state.read.shown=0; state.read.correct=0; state.read.errors=0;
     initRange("read");
@@ -596,7 +676,9 @@ function openRef(){ show("scr-ref"); }
 function exitMode(){
   state.cards.shown=0;
   state.write.shown=0; state.write.correct=0; state.write.errors=0;
+  state.listen.shown=0; state.listen.correct=0; state.listen.errors=0;
   state.read.shown=0; state.read.correct=0; state.read.errors=0;
+  if("speechSynthesis" in window) speechSynthesis.cancel();
   show("scr-menu");
 }
 
@@ -614,6 +696,10 @@ function nextCard(count){
 }
 function flipCard(){
   const card = $("flipcard");
+  if(card.classList.contains("flipped")){ // повторный тап = «Дальше»
+    nextCard();
+    return;
+  }
   $("cardGr").textContent = greekNumber(state.cards.num);
   card.classList.add("flipped");
   $("cardNext").classList.remove("hiddenbtn");
@@ -621,7 +707,7 @@ function flipCard(){
 
 /* ================= WRITE MODE ================= */
 function updateScore(mode){
-  const p = mode==="write" ? "w" : "r";
+  const p = {write:"w", read:"r", listen:"l"}[mode];
   $(p+"-shown").textContent = state[mode].shown;
   $(p+"-correct").textContent = state[mode].correct;
   $(p+"-errors").textContent = state[mode].errors;
@@ -680,6 +766,54 @@ function revealWrite(){
   $("w-speak").classList.remove("hiddenbtn");
   $("w-next").classList.remove("hiddenbtn");
 }
+
+/* ================= LISTEN MODE ================= */
+function nextListen(count){
+  const n = newNumber("listen");
+  if(count !== false) state.listen.shown++;
+  state.listen.done=false;
+  updateScore("listen");
+  resetQuizUI("l");
+  $("l-input").focus();
+  speak(greekNumber(n), listenRate); // автоозвучка нового числа
+}
+function checkListen(){
+  if(state.listen.done) return;
+  const inp = $("l-input");
+  const cleaned = inp.value.replace(/[\s.,]/g,"");
+  if(cleaned==="") { flashWrong(inp); return; }
+  if(/^\d+$/.test(cleaned) && parseInt(cleaned,10)===state.listen.num){
+    state.listen.done = true;
+    state.listen.correct++;
+    updateScore("listen");
+    inp.classList.remove("wrong"); inp.classList.add("right"); inp.disabled = true;
+    const fb = $("l-fb"); fb.textContent = "✓ Σωστά! Правильно!"; fb.className = "feedback ok";
+    burst();
+    $("l-reveal").textContent = fmt(state.listen.num) + " — " + greekNumber(state.listen.num);
+    $("l-check").classList.add("hiddenbtn");
+    $("l-show").classList.add("hiddenbtn");
+    $("l-next").classList.remove("hiddenbtn");
+  }else{
+    state.listen.errors++;
+    updateScore("listen");
+    flashWrong(inp);
+    const fb = $("l-fb"); fb.textContent = "✗ Неправильно, попробуй еще"; fb.className = "feedback err";
+    $("l-show").classList.remove("hiddenbtn");
+  }
+}
+function revealListen(){
+  state.listen.done = true;
+  $("l-reveal").textContent = fmt(state.listen.num) + " — " + greekNumber(state.listen.num);
+  $("l-input").disabled = true;
+  $("l-fb").textContent = "";
+  $("l-check").classList.add("hiddenbtn");
+  $("l-show").classList.add("hiddenbtn");
+  $("l-next").classList.remove("hiddenbtn");
+}
+$("l-rate").addEventListener("input", ()=>{
+  listenRate = +$("l-rate").value;
+  $("l-rateval").textContent = listenRate.toFixed(2).replace(/0$/,"") + "×";
+});
 
 /* ================= READ MODE ================= */
 function nextRead(count){
@@ -804,6 +938,9 @@ document.addEventListener("keydown", e=>{
   if($("scr-write").classList.contains("active")){
     e.preventDefault();
     state.write.done ? nextWrite() : checkWrite();
+  }else if($("scr-listen").classList.contains("active")){
+    e.preventDefault();
+    state.listen.done ? nextListen() : checkListen();
   }else if($("scr-read").classList.contains("active")){
     e.preventDefault();
     state.read.done ? nextRead() : checkRead();
