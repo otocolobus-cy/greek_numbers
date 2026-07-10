@@ -181,6 +181,15 @@ input.ans.right{border-color:var(--ok);}
 .refitem .n{font-weight:700; color:var(--muted); white-space:nowrap;}
 .refitem .g{color:var(--text);}
 .refitem.wide{column-span:all;}
+/* кнопка озвучки: видна только когда в системе найден греческий голос */
+.speakbtn{
+  display:none; border:none; background:var(--chipbg); color:var(--text);
+  width:40px; height:40px; border-radius:50%; font-size:1.1rem; cursor:pointer;
+  align-items:center; justify-content:center; transition:transform .1s;
+}
+.speakbtn:active{transform:scale(.92);}
+body.tts .speakbtn{display:inline-flex;}
+body.tts .refitem{cursor:pointer;}
 .confetti{position:fixed; pointer-events:none; font-size:1.2rem; animation:fall 1s ease-in forwards; z-index:99;}
 @keyframes fall{to{transform:translateY(120px) rotate(200deg); opacity:0;}}
 @media (max-width:420px){
@@ -247,6 +256,7 @@ input.ans.right{border-color:var(--ok);}
         </div>
         <div class="face back">
           <div class="gr" id="cardGr"></div>
+          <button class="speakbtn" title="Озвучить" onclick="event.stopPropagation(); speakNum('cards')">🔊</button>
         </div>
       </div>
     </div>
@@ -285,6 +295,7 @@ input.ans.right{border-color:var(--ok);}
       <div class="btnrow">
         <button class="btn primary" id="w-check" onclick="checkWrite()">Проверить</button>
         <button class="btn ghost hiddenbtn" id="w-show" onclick="revealWrite()">Показать ответ</button>
+        <button class="speakbtn hiddenbtn" id="w-speak" title="Озвучить" onclick="speakNum('write')">🔊</button>
         <button class="btn primary hiddenbtn" id="w-next" onclick="nextWrite()">Дальше →</button>
       </div>
     </div>
@@ -311,6 +322,7 @@ input.ans.right{border-color:var(--ok);}
     </div>
     <div class="quizcard">
       <div class="qtext" id="r-text"></div>
+      <button class="speakbtn" id="r-speak" title="Озвучить" onclick="speakNum('read')" style="margin-top:10px">🔊</button>
       <div class="answer-row">
         <input class="ans" id="r-input" inputmode="numeric" placeholder="введи цифрами…"
                autocomplete="off" spellcheck="false">
@@ -335,6 +347,9 @@ input.ans.right{border-color:var(--ok);}
       <label>Введи любое число (0 – 1 000 000 000) — увидишь, как оно пишется по-гречески:</label>
       <input class="ans" id="conv-input" inputmode="numeric" placeholder="например, 142" autocomplete="off">
       <div class="out" id="conv-out"></div>
+      <div style="text-align:center; margin-top:8px;">
+        <button class="speakbtn hiddenbtn" id="conv-speak" title="Озвучить">🔊</button>
+      </div>
     </div>
     <div class="refwrap" id="refBody"></div>
   </div>
@@ -445,6 +460,7 @@ function newNumber(mode){
   let n, guard=0;
   do{ n = randomNumber(st.min, st.max); } while(n===st.num && ++guard<10);
   st.num = n;
+  if("speechSynthesis" in window) speechSynthesis.cancel(); // не дочитывать прошлое число
   return n;
 }
 function fmt(n){ return n.toLocaleString("ru-RU"); }
@@ -530,6 +546,29 @@ function initRange(mode){
   minNum.onchange = maxNum.onchange = ()=> applyRange(mode);
 }
 
+/* ================= SPEECH (Web Speech API) ================= */
+let greekVoice = null;
+function pickGreekVoice(){
+  const vs = speechSynthesis.getVoices();
+  greekVoice = vs.find(v => /^el([-_]|$)/i.test(v.lang)) || null;
+  document.body.classList.toggle("tts", !!greekVoice);
+}
+if("speechSynthesis" in window){
+  pickGreekVoice();
+  // список голосов подгружается асинхронно
+  speechSynthesis.onvoiceschanged = pickGreekVoice;
+}
+function speak(text){
+  if(!greekVoice || !text) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = greekVoice;
+  u.lang = greekVoice.lang;
+  u.rate = 0.9;
+  speechSynthesis.speak(u);
+}
+function speakNum(mode){ speak(greekNumber(state[mode].num)); }
+
 /* ================= NAVIGATION ================= */
 function show(id){
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -597,6 +636,7 @@ function resetQuizUI(p){
   $(p+"-check").classList.remove("hiddenbtn");
   $(p+"-show").classList.add("hiddenbtn");
   $(p+"-next").classList.add("hiddenbtn");
+  if(p==="w") $("w-speak").classList.add("hiddenbtn"); // не подсказывать ответ
 }
 function nextWrite(count){
   const n = newNumber("write");
@@ -620,6 +660,7 @@ function checkWrite(){
     burst();
     $("w-check").classList.add("hiddenbtn");
     $("w-show").classList.add("hiddenbtn");
+    $("w-speak").classList.remove("hiddenbtn");
     $("w-next").classList.remove("hiddenbtn");
   }else{
     state.write.errors++;
@@ -636,6 +677,7 @@ function revealWrite(){
   $("w-fb").textContent = "";
   $("w-check").classList.add("hiddenbtn");
   $("w-show").classList.add("hiddenbtn");
+  $("w-speak").classList.remove("hiddenbtn");
   $("w-next").classList.remove("hiddenbtn");
 }
 
@@ -717,18 +759,26 @@ function buildRef(){
     const div = document.createElement("div");
     div.className = "refitem" + (n >= 1000000 ? " wide" : "");
     div.innerHTML = `<span class="n">${fmt(n)}</span> — <span class="g">${greekNumber(n)}</span>`;
+    div.title = "Нажми, чтобы озвучить";
+    div.onclick = ()=> speak(greekNumber(n));
     box.appendChild(div);
   });
 }
+let convText = "";
 $("conv-input").addEventListener("input", ()=>{
   const raw = $("conv-input").value.replace(/[\s.,]/g,"");
   const out = $("conv-out");
-  if(raw===""){ out.textContent=""; return; }
-  if(!/^\d+$/.test(raw)){ out.textContent="введи число цифрами"; return; }
-  const n = parseInt(raw,10);
-  const g = greekNumber(n);
-  out.textContent = g===null ? "число должно быть от 0 до 1 000 000 000" : g;
+  convText = "";
+  if(raw===""){ out.textContent=""; }
+  else if(!/^\d+$/.test(raw)){ out.textContent="введи число цифрами"; }
+  else{
+    const g = greekNumber(parseInt(raw,10));
+    if(g===null) out.textContent = "число должно быть от 0 до 1 000 000 000";
+    else{ out.textContent = g; convText = g; }
+  }
+  $("conv-speak").classList.toggle("hiddenbtn", !convText);
 });
+$("conv-speak").onclick = ()=> speak(convText);
 
 /* ================= KEYBOARD ================= */
 /* Единый обработчик Enter: до ответа — проверка, после (в т.ч. когда поле
