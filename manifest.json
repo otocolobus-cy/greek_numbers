@@ -1,0 +1,11 @@
+{
+  "name": "Греческие числительные — тренажер",
+  "short_name": "Αριθμοί",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#f2f4f8",
+  "theme_color": "#2563c9",
+  "icons": [
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}
