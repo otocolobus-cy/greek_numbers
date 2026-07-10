@@ -587,6 +587,7 @@ function applyRange(mode){
   const st = state[mode];
   const changed = st.min!==mn || st.max!==mx;
   st.min = mn; st.max = mx;
+  saveSettings();
   syncRangeUI(mode);
   if(!changed) return;
   // новое число без учета в статистике показов
@@ -810,9 +811,13 @@ function revealListen(){
   $("l-show").classList.add("hiddenbtn");
   $("l-next").classList.remove("hiddenbtn");
 }
+function updateRateLabel(){
+  $("l-rateval").textContent = listenRate.toFixed(2).replace(/0$/,"") + "×";
+}
 $("l-rate").addEventListener("input", ()=>{
   listenRate = +$("l-rate").value;
-  $("l-rateval").textContent = listenRate.toFixed(2).replace(/0$/,"") + "×";
+  updateRateLabel();
+  saveSettings();
 });
 
 /* ================= READ MODE ================= */
@@ -946,6 +951,37 @@ document.addEventListener("keydown", e=>{
     state.read.done ? nextRead() : checkRead();
   }
 });
+
+/* ================= SETTINGS PERSISTENCE ================= */
+function saveSettings(){
+  try{
+    localStorage.setItem("gnt-settings", JSON.stringify({
+      cards:{min:state.cards.min, max:state.cards.max},
+      write:{min:state.write.min, max:state.write.max},
+      listen:{min:state.listen.min, max:state.listen.max},
+      read:{min:state.read.min, max:state.read.max},
+      rate: listenRate
+    }));
+  }catch(e){}
+}
+(function loadSettings(){
+  try{
+    const s = JSON.parse(localStorage.getItem("gnt-settings"));
+    if(s){
+      ["cards","write","listen","read"].forEach(m=>{
+        const v = s[m];
+        if(v && Number.isInteger(v.min) && Number.isInteger(v.max)
+           && v.min>=0 && v.max<=MAX_N && v.min<=v.max){
+          state[m].min = v.min;
+          state[m].max = v.max;
+        }
+      });
+      if(typeof s.rate==="number" && s.rate>=0.5 && s.rate<=2) listenRate = s.rate;
+    }
+  }catch(e){}
+  $("l-rate").value = listenRate;
+  updateRateLabel();
+})();
 
 /* ================= THEME ================= */
 function setTheme(t){
