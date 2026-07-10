@@ -332,8 +332,13 @@ const VARIANTS = {
   "εφτακόσια":"επτακόσια","οχτακόσια":"οκτακόσια",
   "εφτακόσιες":"επτακόσιες","οχτακόσιες":"οκτακόσιες"
 };
+/* Accent typed as a separate mark before a capital vowel ("΄Ενα") →
+   precomposed accented capital ("Ένα") */
+const CAP_TONOS = {"Α":"Ά","Ε":"Έ","Η":"Ή","Ι":"Ί","Ο":"Ό","Υ":"Ύ","Ω":"Ώ"};
 function normGreek(s){
-  return s.normalize("NFC").toLowerCase().trim().replace(/\s+/g," ")
+  return s.normalize("NFC")
+    .replace(/[΄´'’]([ΑΕΗΙΟΥΩ])/g, (m,c) => CAP_TONOS[c])
+    .toLowerCase().trim().replace(/\s+/g," ")
     .split(" ").map(w => VARIANTS[w] || w).join(" ");
 }
 function checkGreekAnswer(input, n){
