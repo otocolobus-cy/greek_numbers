@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Греческие числительные — тренажер</title>
+<style>
+:root{
+  --bg:#f2f4f8; --card:#ffffff; --text:#1c2333; --muted:#6b7387;
+  --accent:#2563c9; --accent2:#0d9488; --border:#dde2ec;
+  --ok:#16a34a; --err:#dc2626; --shadow:0 4px 18px rgba(30,41,59,.08);
+  --chipbg:#e8edf6;
+}
+html[data-theme="dark"]{
+  --bg:#12151d; --card:#1c2230; --text:#e7eaf2; --muted:#8b93a7;
+  --accent:#5b9dff; --accent2:#2dd4bf; --border:#2c3446;
+  --ok:#4ade80; --err:#f87171; --shadow:0 4px 18px rgba(0,0,0,.35);
+  --chipbg:#252d40;
+}
+*{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  min-height:100vh; transition:background .3s,color .3s;
+}
+.wrap{max-width:560px; margin:0 auto; padding:16px 16px 40px;}
+header{display:flex; align-items:center; justify-content:space-between; padding:8px 0 4px;}
+header h1{font-size:1.15rem; margin:0; font-weight:700;}
+header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
+.iconbtn{
+  background:var(--card); border:1px solid var(--border); color:var(--text);
+  width:44px; height:44px; border-radius:12px; cursor:pointer; font-size:1.25rem;
+  display:flex; align-items:center; justify-content:center; box-shadow:var(--shadow);
+}
+.screen{display:none;}
+.screen.active{display:block; animation:fadein .25s ease;}
+@keyframes fadein{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
+
+/* main menu */
+.menu{display:grid; gap:14px; margin-top:22px;}
+.menubtn{
+  display:flex; align-items:center; gap:16px; text-align:left;
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  padding:18px; cursor:pointer; color:var(--text); box-shadow:var(--shadow);
+  transition:transform .12s, border-color .12s; font:inherit;
+}
+.menubtn:active{transform:scale(.98);}
+.menubtn .emoji{font-size:1.9rem;}
+.menubtn .t{font-size:1.05rem; font-weight:700;}
+.menubtn .d{color:var(--muted); font-size:.83rem; margin-top:2px;}
+
+/* mode header */
+.modebar{display:flex; align-items:center; justify-content:space-between; margin:6px 0 12px;}
+.modetitle{font-weight:700; font-size:1.05rem;}
+.exitbtn{
+  background:transparent; border:1px solid var(--border); color:var(--muted);
+  border-radius:10px; padding:8px 14px; cursor:pointer; font:inherit; font-size:.85rem;
+}
+.score{color:var(--muted); font-size:.85rem; margin-bottom:10px;}
+.score b{color:var(--text);}
+
+/* range slider */
+.rangebox{
+  background:var(--card); border:1px solid var(--border); border-radius:14px;
+  padding:12px 16px 8px; margin-bottom:16px; box-shadow:var(--shadow);
+}
+.rangelab{font-size:.85rem; color:var(--muted); margin-bottom:6px;}
+.rangelab b{color:var(--text);}
+input[type=range].slider{
+  width:100%; accent-color:var(--accent); height:32px; margin:0; cursor:pointer;
+  touch-action:pan-x; background:transparent;
+}
+
+/* flip card */
+.flipzone{perspective:1200px; margin:8px 0 16px;}
+.flipcard{
+  position:relative; width:100%; min-height:210px; cursor:pointer;
+  transform-style:preserve-3d; transition:transform .55s cubic-bezier(.4,.1,.2,1);
+}
+.flipcard.flipped{transform:rotateY(180deg);}
+.face{
+  position:absolute; inset:0; backface-visibility:hidden; -webkit-backface-visibility:hidden;
+  background:var(--card); border:1px solid var(--border); border-radius:20px;
+  box-shadow:var(--shadow); display:flex; flex-direction:column;
+  align-items:center; justify-content:center; padding:24px; gap:10px;
+}
+.face.back{transform:rotateY(180deg);}
+.face .num{font-size:2.6rem; font-weight:800; letter-spacing:.02em; word-break:break-all; text-align:center;}
+.face .gr{font-size:1.45rem; font-weight:700; color:var(--accent); text-align:center; line-height:1.45;}
+.face .hint{color:var(--muted); font-size:.8rem;}
+
+/* quiz */
+.quizcard{
+  background:var(--card); border:1px solid var(--border); border-radius:20px;
+  box-shadow:var(--shadow); padding:26px 20px; text-align:center;
+}
+.quizcard .qnum{font-size:2.4rem; font-weight:800; word-break:break-all;}
+.quizcard .qtext{font-size:1.4rem; font-weight:700; color:var(--accent); line-height:1.5;}
+.answer-row{margin-top:18px;}
+input.ans{
+  width:100%; padding:14px; font-size:1.05rem; text-align:center;
+  border:2px solid var(--border); border-radius:12px; background:var(--bg); color:var(--text);
+  outline:none; font:inherit; font-size:1.05rem; transition:border-color .15s;
+}
+input.ans:focus{border-color:var(--accent);}
+input.ans.wrong{border-color:var(--err); animation:shake .4s;}
+input.ans.right{border-color:var(--ok);}
+@keyframes shake{
+  0%,100%{transform:translateX(0);} 15%{transform:translateX(-9px);} 30%{transform:translateX(8px);}
+  45%{transform:translateX(-6px);} 60%{transform:translateX(5px);} 75%{transform:translateX(-3px);} 90%{transform:translateX(2px);}
+}
+.feedback{min-height:34px; margin-top:12px; font-weight:700; font-size:1rem;}
+.feedback.ok{color:var(--ok); animation:pop .35s;}
+.feedback.err{color:var(--err);}
+@keyframes pop{0%{transform:scale(.5); opacity:0;} 70%{transform:scale(1.15);} 100%{transform:scale(1); opacity:1;}}
+.revealed{margin-top:8px; font-size:1.15rem; font-weight:700; color:var(--accent); line-height:1.5;}
+.btnrow{display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;}
+.btn{
+  border:none; border-radius:12px; padding:13px 22px; font:inherit; font-size:.95rem;
+  font-weight:700; cursor:pointer; transition:transform .1s;
+}
+.btn:active{transform:scale(.97);}
+.btn.primary{background:var(--accent); color:#fff;}
+.btn.ghost{background:var(--chipbg); color:var(--text);}
+.hiddenbtn{display:none !important;}
+
+/* reference */
+.convert{
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  box-shadow:var(--shadow); padding:18px; margin-bottom:18px;
+}
+.convert label{font-size:.85rem; color:var(--muted); display:block; margin-bottom:8px;}
+.convert .out{margin-top:12px; font-size:1.15rem; font-weight:700; color:var(--accent); line-height:1.5; min-height:1.5em; text-align:center;}
+.refwrap{
+  background:var(--card); border:1px solid var(--border); border-radius:16px;
+  box-shadow:var(--shadow); padding:12px 16px;
+  column-count:2; column-gap:22px;
+}
+.refitem{
+  display:flex; gap:8px; align-items:baseline; padding:7px 0;
+  border-bottom:1px solid var(--border); break-inside:avoid; font-size:.9rem;
+}
+.refitem .n{font-weight:700; color:var(--muted); white-space:nowrap;}
+.refitem .g{color:var(--text);}
+.refitem.wide{column-span:all;}
+.confetti{position:fixed; pointer-events:none; font-size:1.2rem; animation:fall 1s ease-in forwards; z-index:99;}
+@keyframes fall{to{transform:translateY(120px) rotate(200deg); opacity:0;}}
+@media (max-width:420px){
+  .face .num{font-size:2rem;} .quizcard .qnum{font-size:1.9rem;} .quizcard .qtext{font-size:1.2rem;}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Ελληνικά αριθμητικά</h1>
+      <div class="sub">Тренажер греческих числительных</div>
+    </div>
+    <button class="iconbtn" id="themeBtn" title="Дневной / ночной режим">☀️</button>
+  </header>
+
+  <!-- MAIN MENU -->
+  <div class="screen active" id="scr-menu">
+    <div class="menu">
+      <button class="menubtn" onclick="openMode('cards')">
+        <span class="emoji">🃏</span>
+        <span><span class="t">Карточки</span><br><span class="d">Число → переверни карточку → ответ</span></span>
+      </button>
+      <button class="menubtn" onclick="openMode('write')">
+        <span class="emoji">✍️</span>
+        <span><span class="t">Письмо</span><br><span class="d">Напиши число по-гречески</span></span>
+      </button>
+      <button class="menubtn" onclick="openMode('read')">
+        <span class="emoji">👁️</span>
+        <span><span class="t">Чтение</span><br><span class="d">Прочитай греческое число и введи цифрами</span></span>
+      </button>
+      <button class="menubtn" onclick="openRef()">
+        <span class="emoji">📖</span>
+        <span><span class="t">Справочник</span><br><span class="d">Таблица правил и переводчик чисел</span></span>
+      </button>
+    </div>
+  </div>
+
+  <!-- CARDS -->
+  <div class="screen" id="scr-cards">
+    <div class="modebar">
+      <div class="modetitle">🃏 Карточки</div>
+      <button class="exitbtn" onclick="exitMode()">✕ Завершить</button>
+    </div>
+    <div class="score">Показано: <b id="c-shown">0</b></div>
+    <div class="rangebox">
+      <div class="rangelab">Диапазон: <b id="cards-rangeval"></b></div>
+      <input type="range" class="slider" id="cards-slider" min="0" max="8" step="1">
+    </div>
+    <div class="flipzone">
+      <div class="flipcard" id="flipcard" onclick="flipCard()">
+        <div class="face front">
+          <div class="num" id="cardNum"></div>
+          <div class="hint">нажми, чтобы перевернуть</div>
+        </div>
+        <div class="face back">
+          <div class="gr" id="cardGr"></div>
+        </div>
+      </div>
+    </div>
+    <div class="btnrow">
+      <button class="btn primary hiddenbtn" id="cardNext" onclick="nextCard()">Дальше →</button>
+    </div>
+  </div>
+
+  <!-- WRITE -->
+  <div class="screen" id="scr-write">
+    <div class="modebar">
+      <div class="modetitle">✍️ Письмо</div>
+      <button class="exitbtn" onclick="exitMode()">✕ Завершить</button>
+    </div>
+    <div class="score">Показано: <b id="w-shown">0</b> · Правильно: <b id="w-correct">0</b> · Ошибки: <b id="w-errors">0</b></div>
+    <div class="rangebox">
+      <div class="rangelab">Диапазон: <b id="write-rangeval"></b></div>
+      <input type="range" class="slider" id="write-slider" min="0" max="8" step="1">
+    </div>
+    <div class="quizcard">
+      <div class="qnum" id="w-num"></div>
+      <div class="answer-row">
+        <input class="ans" id="w-input" lang="el" placeholder="напиши по-гречески…"
+               autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="feedback" id="w-fb"></div>
+      <div class="revealed" id="w-reveal"></div>
+      <div class="btnrow">
+        <button class="btn primary" id="w-check" onclick="checkWrite()">Проверить</button>
+        <button class="btn ghost hiddenbtn" id="w-show" onclick="revealWrite()">Показать ответ</button>
+        <button class="btn primary hiddenbtn" id="w-next" onclick="nextWrite()">Дальше →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- READ -->
+  <div class="screen" id="scr-read">
+    <div class="modebar">
+      <div class="modetitle">👁️ Чтение</div>
+      <button class="exitbtn" onclick="exitMode()">✕ Завершить</button>
+    </div>
+    <div class="score">Показано: <b id="r-shown">0</b> · Правильно: <b id="r-correct">0</b> · Ошибки: <b id="r-errors">0</b></div>
+    <div class="rangebox">
+      <div class="rangelab">Диапазон: <b id="read-rangeval"></b></div>
+      <input type="range" class="slider" id="read-slider" min="0" max="8" step="1">
+    </div>
+    <div class="quizcard">
+      <div class="qtext" id="r-text"></div>
+      <div class="answer-row">
+        <input class="ans" id="r-input" inputmode="numeric" placeholder="введи цифрами…"
+               autocomplete="off" spellcheck="false">
+      </div>
+      <div class="feedback" id="r-fb"></div>
+      <div class="revealed" id="r-reveal"></div>
+      <div class="btnrow">
+        <button class="btn primary" id="r-check" onclick="checkRead()">Проверить</button>
+        <button class="btn ghost hiddenbtn" id="r-show" onclick="revealRead()">Показать ответ</button>
+        <button class="btn primary hiddenbtn" id="r-next" onclick="nextRead()">Дальше →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REFERENCE -->
+  <div class="screen" id="scr-ref">
+    <div class="modebar">
+      <div class="modetitle">📖 Справочник</div>
+      <button class="exitbtn" onclick="exitMode()">✕ На главную</button>
+    </div>
+    <div class="convert">
+      <label>Введи любое число (0 – 1 000 000 000) — увидишь, как оно пишется по-гречески:</label>
+      <input class="ans" id="conv-input" inputmode="numeric" placeholder="например, 142" autocomplete="off">
+      <div class="out" id="conv-out"></div>
+    </div>
+    <div class="refwrap" id="refBody"></div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= GREEK NUMBER GENERATOR ================= */
+/*GEN-START*/
+const UNITS_N = ["","ένα","δύο","τρία","τέσσερα","πέντε","έξι","επτά","οκτώ","εννέα","δέκα",
+  "έντεκα","δώδεκα","δεκατρία","δεκατέσσερα","δεκαπέντε","δεκαέξι","δεκαεπτά","δεκαοκτώ","δεκαεννέα"];
+const UNITS_F = {1:"μία",3:"τρεις",4:"τέσσερις",13:"δεκατρείς",14:"δεκατέσσερις"};
+const TENS = ["","","είκοσι","τριάντα","σαράντα","πενήντα","εξήντα","εβδομήντα","ογδόντα","ενενήντα"];
+const HUNDREDS_N = ["","","διακόσια","τριακόσια","τετρακόσια","πεντακόσια","εξακόσια","επτακόσια","οκτακόσια","εννιακόσια"];
+const HUNDREDS_F = ["","","διακόσιες","τριακόσιες","τετρακόσιες","πεντακόσιες","εξακόσιες","επτακόσιες","οκτακόσιες","εννιακόσιες"];
+
+function smallWord(n, fem){ // 1..19
+  return (fem && UNITS_F[n]) ? UNITS_F[n] : UNITS_N[n];
+}
+function underThousand(n, fem){ // 1..999
+  const words = [];
+  const h = Math.floor(n/100), r = n%100;
+  if(h){
+    if(h===1) words.push(r ? "εκατόν" : "εκατό");
+    else words.push(fem ? HUNDREDS_F[h] : HUNDREDS_N[h]);
+  }
+  if(r){
+    if(r<20) words.push(smallWord(r, fem));
+    else{
+      words.push(TENS[Math.floor(r/10)]);
+      const u = r%10;
+      if(u) words.push(smallWord(u, fem));
+    }
+  }
+  return words.join(" ");
+}
+function greekNumber(n){
+  if(!Number.isInteger(n) || n<0 || n>1000000000) return null;
+  if(n===0) return "μηδέν";
+  const parts = [];
+  const b = Math.floor(n/1e9);
+  if(b) parts.push("ένα δισεκατομμύριο"); // max input is exactly 1e9
+  n %= 1e9;
+  const m = Math.floor(n/1e6);
+  if(m) parts.push(m===1 ? "ένα εκατομμύριο" : underThousand(m,false)+" εκατομμύρια");
+  n %= 1e6;
+  const k = Math.floor(n/1000);
+  if(k) parts.push(k===1 ? "χίλια" : underThousand(k,true)+" χιλιάδες");
+  n %= 1000;
+  if(n) parts.push(underThousand(n,false));
+  return parts.join(" ");
+}
+/* Accepted colloquial variants (word-level) */
+const VARIANTS = {
+  "εφτά":"επτά","οχτώ":"οκτώ","εννιά":"εννέα",
+  "δεκαεφτά":"δεκαεπτά","δεκαοχτώ":"δεκαοκτώ","δεκαεννιά":"δεκαεννέα","δεκάξι":"δεκαέξι",
+  "εφτακόσια":"επτακόσια","οχτακόσια":"οκτακόσια",
+  "εφτακόσιες":"επτακόσιες","οχτακόσιες":"οκτακόσιες"
+};
+function normGreek(s){
+  return s.normalize("NFC").toLowerCase().trim().replace(/\s+/g," ")
+    .split(" ").map(w => VARIANTS[w] || w).join(" ");
+}
+function checkGreekAnswer(input, n){
+  return normGreek(input) === normGreek(greekNumber(n));
+}
+/*GEN-END*/
+
+/* ================= APP STATE / HELPERS ================= */
+const $ = id => document.getElementById(id);
+const STEPS = [20,100,1000,10000,100000,1000000,10000000,100000000,1000000000];
+const STEP_LABELS = ["0–20","0–100","0–1000","0–10 тыс.","0–100 тыс.","0–1 млн","0–10 млн","0–100 млн","0–1 млрд"];
+const state = {
+  cards:{range:1, num:0, shown:0},
+  write:{range:1, num:0, shown:0, correct:0, errors:0, done:false},
+  read:{range:1, num:0, shown:0, correct:0, errors:0, done:false}
+};
+
+function randomNumber(max){
+  // Buckets by digit count for variety of magnitudes; a partially filled
+  // top bucket gets proportionally lower weight (sqrt-softened), so edge
+  // numbers like exactly 100 or 1000 don't get inflated probability.
+  const buckets = [];
+  for(let d=1;;d++){
+    const lo = d===1 ? 0 : Math.pow(10, d-1);
+    if(lo > max) break;
+    const full = Math.pow(10, d)-1;
+    const hi = Math.min(full, max);
+    buckets.push({lo, hi, w: Math.sqrt((hi-lo+1)/(full-lo+1))});
+    if(hi === max) break;
+  }
+  const total = buckets.reduce((s,b)=>s+b.w, 0);
+  let r = Math.random()*total;
+  for(const b of buckets){
+    if(r < b.w) return b.lo + Math.floor(Math.random()*(b.hi-b.lo+1));
+    r -= b.w;
+  }
+  return Math.floor(Math.random()*(max+1));
+}
+function newNumber(mode){
+  const st = state[mode];
+  let n, guard=0;
+  do{ n = randomNumber(STEPS[st.range]); } while(n===st.num && ++guard<10);
+  st.num = n;
+  return n;
+}
+function fmt(n){ return n.toLocaleString("ru-RU"); }
+
+function initSlider(mode){
+  const sl = $(mode+"-slider"), lab = $(mode+"-rangeval");
+  sl.value = state[mode].range;
+  lab.textContent = STEP_LABELS[state[mode].range];
+  sl.oninput = ()=>{ lab.textContent = STEP_LABELS[sl.value]; };
+  sl.onchange = ()=>{
+    if(state[mode].range === +sl.value) return;
+    state[mode].range = +sl.value;
+    if(mode==="cards") nextCard();
+    if(mode==="write") nextWrite();
+    if(mode==="read") nextRead();
+  };
+}
+
+/* ================= NAVIGATION ================= */
+function show(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+function openMode(mode){
+  if(mode==="cards"){
+    state.cards.shown=0;
+    initSlider("cards");
+    show("scr-cards");
+    nextCard();
+  }else if(mode==="write"){
+    state.write.shown=0; state.write.correct=0; state.write.errors=0;
+    initSlider("write");
+    show("scr-write");
+    nextWrite();
+  }else if(mode==="read"){
+    state.read.shown=0; state.read.correct=0; state.read.errors=0;
+    initSlider("read");
+    show("scr-read");
+    nextRead();
+  }
+}
+function openRef(){ show("scr-ref"); }
+function exitMode(){
+  state.cards.shown=0;
+  state.write.shown=0; state.write.correct=0; state.write.errors=0;
+  state.read.shown=0; state.read.correct=0; state.read.errors=0;
+  show("scr-menu");
+}
+
+/* ================= CARDS MODE ================= */
+function nextCard(){
+  const n = newNumber("cards");
+  state.cards.shown++;
+  $("c-shown").textContent = state.cards.shown;
+  const card = $("flipcard");
+  card.classList.remove("flipped");
+  $("cardNext").classList.add("hiddenbtn");
+  // swap text after flip-back animation would be visible; set front now, back after tiny delay
+  $("cardNum").textContent = fmt(n);
+  setTimeout(()=>{ $("cardGr").textContent = greekNumber(n); }, 300);
+}
+function flipCard(){
+  const card = $("flipcard");
+  $("cardGr").textContent = greekNumber(state.cards.num);
+  card.classList.add("flipped");
+  $("cardNext").classList.remove("hiddenbtn");
+}
+
+/* ================= WRITE MODE ================= */
+function updateScore(mode){
+  const p = mode==="write" ? "w" : "r";
+  $(p+"-shown").textContent = state[mode].shown;
+  $(p+"-correct").textContent = state[mode].correct;
+  $(p+"-errors").textContent = state[mode].errors;
+}
+function resetQuizUI(p){
+  $(p+"-input").value = "";
+  $(p+"-input").disabled = false;
+  $(p+"-input").classList.remove("wrong","right");
+  $(p+"-fb").textContent = "";
+  $(p+"-fb").className = "feedback";
+  $(p+"-reveal").textContent = "";
+  $(p+"-check").classList.remove("hiddenbtn");
+  $(p+"-show").classList.add("hiddenbtn");
+  $(p+"-next").classList.add("hiddenbtn");
+}
+function nextWrite(){
+  const n = newNumber("write");
+  state.write.shown++; state.write.done=false;
+  updateScore("write");
+  resetQuizUI("w");
+  $("w-num").textContent = fmt(n);
+  $("w-input").focus();
+}
+function checkWrite(){
+  if(state.write.done) return;
+  const inp = $("w-input");
+  if(!inp.value.trim()) { flashWrong(inp); return; }
+  if(checkGreekAnswer(inp.value, state.write.num)){
+    state.write.done = true;
+    state.write.correct++;
+    updateScore("write");
+    inp.classList.remove("wrong"); inp.classList.add("right"); inp.disabled = true;
+    const fb = $("w-fb"); fb.textContent = "✓ Σωστά! Правильно!"; fb.className = "feedback ok";
+    burst();
+    $("w-check").classList.add("hiddenbtn");
+    $("w-show").classList.add("hiddenbtn");
+    $("w-next").classList.remove("hiddenbtn");
+  }else{
+    state.write.errors++;
+    updateScore("write");
+    flashWrong(inp);
+    const fb = $("w-fb"); fb.textContent = "✗ Неправильно, попробуй еще"; fb.className = "feedback err";
+    $("w-show").classList.remove("hiddenbtn");
+  }
+}
+function revealWrite(){
+  state.write.done = true;
+  $("w-reveal").textContent = greekNumber(state.write.num);
+  $("w-input").disabled = true;
+  $("w-fb").textContent = "";
+  $("w-check").classList.add("hiddenbtn");
+  $("w-show").classList.add("hiddenbtn");
+  $("w-next").classList.remove("hiddenbtn");
+}
+
+/* ================= READ MODE ================= */
+function nextRead(){
+  const n = newNumber("read");
+  state.read.shown++; state.read.done=false;
+  updateScore("read");
+  resetQuizUI("r");
+  $("r-text").textContent = greekNumber(n);
+  $("r-input").focus();
+}
+function checkRead(){
+  if(state.read.done) return;
+  const inp = $("r-input");
+  const cleaned = inp.value.replace(/[\s.,]/g,"");
+  if(cleaned==="") { flashWrong(inp); return; }
+  if(/^\d+$/.test(cleaned) && parseInt(cleaned,10)===state.read.num){
+    state.read.done = true;
+    state.read.correct++;
+    updateScore("read");
+    inp.classList.remove("wrong"); inp.classList.add("right"); inp.disabled = true;
+    const fb = $("r-fb"); fb.textContent = "✓ Σωστά! Правильно!"; fb.className = "feedback ok";
+    burst();
+    $("r-check").classList.add("hiddenbtn");
+    $("r-show").classList.add("hiddenbtn");
+    $("r-next").classList.remove("hiddenbtn");
+  }else{
+    state.read.errors++;
+    updateScore("read");
+    flashWrong(inp);
+    const fb = $("r-fb"); fb.textContent = "✗ Неправильно, попробуй еще"; fb.className = "feedback err";
+    $("r-show").classList.remove("hiddenbtn");
+  }
+}
+function revealRead(){
+  state.read.done = true;
+  $("r-reveal").textContent = fmt(state.read.num);
+  $("r-input").disabled = true;
+  $("r-fb").textContent = "";
+  $("r-check").classList.add("hiddenbtn");
+  $("r-show").classList.add("hiddenbtn");
+  $("r-next").classList.remove("hiddenbtn");
+}
+
+/* ================= EFFECTS ================= */
+function flashWrong(inp){
+  inp.classList.remove("wrong");
+  void inp.offsetWidth; // restart animation
+  inp.classList.add("wrong");
+}
+function burst(){
+  const emo = ["🎉","✨","⭐","💚"];
+  for(let i=0;i<8;i++){
+    const s = document.createElement("span");
+    s.className = "confetti";
+    s.textContent = emo[Math.floor(Math.random()*emo.length)];
+    s.style.left = (20+Math.random()*60)+"vw";
+    s.style.top = (30+Math.random()*20)+"vh";
+    document.body.appendChild(s);
+    setTimeout(()=>s.remove(), 1100);
+  }
+}
+
+/* ================= REFERENCE ================= */
+function refNumbers(){
+  const list = [];
+  for(let i=0;i<=32;i++) list.push(i);
+  for(let i=40;i<=90;i+=10) list.push(i);
+  list.push(100,101,102,110);
+  for(let i=200;i<=900;i+=100) list.push(i);
+  list.push(1000,1001,1002,1100,2000,3000,4000,5000,1000000,1000000000);
+  return list;
+}
+function buildRef(){
+  const box = $("refBody");
+  refNumbers().forEach(n=>{
+    const div = document.createElement("div");
+    div.className = "refitem" + (n >= 1000000 ? " wide" : "");
+    div.innerHTML = `<span class="n">${fmt(n)}</span> — <span class="g">${greekNumber(n)}</span>`;
+    box.appendChild(div);
+  });
+}
+$("conv-input").addEventListener("input", ()=>{
+  const raw = $("conv-input").value.replace(/[\s.,]/g,"");
+  const out = $("conv-out");
+  if(raw===""){ out.textContent=""; return; }
+  if(!/^\d+$/.test(raw)){ out.textContent="введи число цифрами"; return; }
+  const n = parseInt(raw,10);
+  const g = greekNumber(n);
+  out.textContent = g===null ? "число должно быть от 0 до 1 000 000 000" : g;
+});
+
+/* ================= KEYBOARD ================= */
+$("w-input").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ state.write.done ? nextWrite() : checkWrite(); }
+});
+$("r-input").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){ state.read.done ? nextRead() : checkRead(); }
+});
+
+/* ================= THEME ================= */
+function setTheme(t){
+  document.documentElement.setAttribute("data-theme", t);
+  $("themeBtn").textContent = t==="dark" ? "🌙" : "☀️";
+  try{ localStorage.setItem("gnt-theme", t); }catch(e){}
+}
+$("themeBtn").onclick = ()=>{
+  const cur = document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark";
+  setTheme(cur);
+};
+(function(){
+  let t = "light";
+  try{ t = localStorage.getItem("gnt-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }catch(e){}
+  setTheme(t);
+})();
+
+buildRef();
+</script>
+</body>
+</html>
