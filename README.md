@@ -1,2 +1,1 @@
-The code was created using Claude.ai. No developers were harmed.
-The icon image was generated using ChatGPT.
+The code was created using Claude.ai. The icon image was generated using ChatGPT. No developers were harmed.
