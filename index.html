@@ -209,6 +209,12 @@ body.tts .refitem{cursor:pointer;}
 @media (max-width:420px){
   .face .num{font-size:2rem;} .quizcard .qnum{font-size:1.9rem;} .quizcard .qtext{font-size:1.2rem;}
 }
+/* iOS зумит к полю ввода, если шрифт в нем меньше 16px — на сенсорных
+   устройствах держим все текстовые поля не мельче этого порога */
+@media (hover:none) and (pointer:coarse){
+  .rnum{font-size:16px; width:112px; padding:6px 7px;}
+  input.ans{font-size:16px;}
+}
 </style>
 </head>
 <body>
