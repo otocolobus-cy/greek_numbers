@@ -139,10 +139,11 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
 .quizcard .qnum{font-size:2.4rem; font-weight:800; word-break:break-all;}
 .quizcard .qtext{font-size:1.4rem; font-weight:700; color:var(--accent); line-height:1.5;}
 .answer-row{margin-top:18px;}
-input.ans{
+.ans{
   width:100%; padding:14px; font-size:1.05rem; text-align:center;
   border:2px solid var(--border); border-radius:12px; background:var(--bg); color:var(--text);
   outline:none; font:inherit; font-size:1.05rem; transition:border-color .15s;
+  box-sizing:border-box;
 }
 input.ans:focus{border-color:var(--accent);}
 input.ans.wrong{border-color:var(--err); animation:shake .4s;}
@@ -156,6 +157,10 @@ input.ans.right{border-color:var(--ok);}
 .feedback.err{color:var(--err);}
 @keyframes pop{0%{transform:scale(.5); opacity:0;} 70%{transform:scale(1.15);} 100%{transform:scale(1); opacity:1;}}
 .revealed{margin-top:8px; font-size:1.15rem; font-weight:700; color:var(--accent); line-height:1.5;}
+/* подсветка ошибок прямо «в поле»: блок-двойник, подменяющий input */
+.hintlay{display:none; cursor:text; word-break:break-word; border-color:var(--err);}
+.hintlay .wr{color:var(--err);}
+.btnrow-lower{margin-top:10px;}
 .btnrow{display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;}
 .btn{
   border:none; border-radius:12px; padding:13px 22px; font:inherit; font-size:.95rem;
@@ -215,7 +220,7 @@ body.tts .refitem{cursor:pointer;}
 @media (hover:none) and (pointer:coarse){
   /* 70px на телефоне в портрете, плавно до 112px на ландшафте и планшетах */
   .rnum{font-size:16px; width:clamp(70px, 18vw, 112px); padding:6px 7px;}
-  input.ans{font-size:16px;}
+  .ans{font-size:16px;}
 }
 </style>
 </head>
@@ -316,14 +321,18 @@ body.tts .refitem{cursor:pointer;}
       <div class="answer-row">
         <input class="ans" id="w-input" lang="el" placeholder="напиши по-гречески…"
                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
+        <div class="ans hintlay" id="w-hintlay" onclick="hideHint('w', true)"></div>
       </div>
       <div class="feedback" id="w-fb"></div>
       <div class="revealed" id="w-reveal"></div>
       <div class="btnrow">
         <button class="btn primary" id="w-check" onclick="checkWrite()">Проверить</button>
-        <button class="btn ghost hiddenbtn" id="w-show" onclick="revealWrite()">Показать ответ</button>
+        <button class="btn ghost hiddenbtn" id="w-hintbtn" onclick="showHint('write')">Подсказка</button>
         <button class="speakbtn hiddenbtn" id="w-speak" title="Озвучить" onclick="speakNum('write')">🔊</button>
         <button class="btn primary hiddenbtn" id="w-next" onclick="nextWrite()">Дальше →</button>
+      </div>
+      <div class="btnrow btnrow-lower">
+        <button class="btn ghost hiddenbtn" id="w-show" onclick="revealWrite()">Показать ответ</button>
       </div>
     </div>
   </div>
@@ -356,13 +365,17 @@ body.tts .refitem{cursor:pointer;}
       <div class="answer-row">
         <input class="ans" id="l-input" inputmode="numeric" placeholder="введи цифрами…"
                autocomplete="off" spellcheck="false">
+        <div class="ans hintlay" id="l-hintlay" onclick="hideHint('l', true)"></div>
       </div>
       <div class="feedback" id="l-fb"></div>
       <div class="revealed" id="l-reveal"></div>
       <div class="btnrow">
         <button class="btn primary" id="l-check" onclick="checkListen()">Проверить</button>
-        <button class="btn ghost hiddenbtn" id="l-show" onclick="revealListen()">Показать ответ</button>
+        <button class="btn ghost hiddenbtn" id="l-hintbtn" onclick="showHint('listen')">Подсказка</button>
         <button class="btn primary hiddenbtn" id="l-next" onclick="nextListen()">Дальше →</button>
+      </div>
+      <div class="btnrow btnrow-lower">
+        <button class="btn ghost hiddenbtn" id="l-show" onclick="revealListen()">Показать ответ</button>
       </div>
     </div>
   </div>
@@ -392,13 +405,17 @@ body.tts .refitem{cursor:pointer;}
       <div class="answer-row">
         <input class="ans" id="r-input" inputmode="numeric" placeholder="введи цифрами…"
                autocomplete="off" spellcheck="false">
+        <div class="ans hintlay" id="r-hintlay" onclick="hideHint('r', true)"></div>
       </div>
       <div class="feedback" id="r-fb"></div>
       <div class="revealed" id="r-reveal"></div>
       <div class="btnrow">
         <button class="btn primary" id="r-check" onclick="checkRead()">Проверить</button>
-        <button class="btn ghost hiddenbtn" id="r-show" onclick="revealRead()">Показать ответ</button>
+        <button class="btn ghost hiddenbtn" id="r-hintbtn" onclick="showHint('read')">Подсказка</button>
         <button class="btn primary hiddenbtn" id="r-next" onclick="nextRead()">Дальше →</button>
+      </div>
+      <div class="btnrow btnrow-lower">
+        <button class="btn ghost hiddenbtn" id="r-show" onclick="revealRead()">Показать ответ</button>
       </div>
     </div>
   </div>
@@ -753,6 +770,8 @@ function resetQuizUI(p){
   $(p+"-reveal").textContent = "";
   $(p+"-check").classList.remove("hiddenbtn");
   $(p+"-show").classList.add("hiddenbtn");
+  $(p+"-hintbtn").classList.add("hiddenbtn");
+  hideHint(p);
   $(p+"-next").classList.add("hiddenbtn");
   if(p==="w") $("w-speak").classList.add("hiddenbtn"); // не подсказывать ответ
 }
@@ -767,6 +786,7 @@ function nextWrite(count){
 }
 function checkWrite(){
   if(state.write.done) return;
+  hideHint("w");
   const inp = $("w-input");
   if(!inp.value.trim()) { flashWrong(inp); return; }
   if(checkGreekAnswer(inp.value, state.write.num)){
@@ -778,6 +798,7 @@ function checkWrite(){
     burst();
     $("w-check").classList.add("hiddenbtn");
     $("w-show").classList.add("hiddenbtn");
+    $("w-hintbtn").classList.add("hiddenbtn");
     $("w-speak").classList.remove("hiddenbtn");
     $("w-next").classList.remove("hiddenbtn");
   }else{
@@ -785,16 +806,19 @@ function checkWrite(){
     updateScore("write");
     flashWrong(inp);
     const fb = $("w-fb"); fb.textContent = "✗ Неправильно, попробуй еще"; fb.className = "feedback err";
+    $("w-hintbtn").classList.remove("hiddenbtn");
     $("w-show").classList.remove("hiddenbtn");
   }
 }
 function revealWrite(){
   state.write.done = true;
+  hideHint("w");
   $("w-reveal").textContent = greekNumber(state.write.num);
   $("w-input").disabled = true;
   $("w-fb").textContent = "";
   $("w-check").classList.add("hiddenbtn");
   $("w-show").classList.add("hiddenbtn");
+  $("w-hintbtn").classList.add("hiddenbtn");
   $("w-speak").classList.remove("hiddenbtn");
   $("w-next").classList.remove("hiddenbtn");
 }
@@ -811,6 +835,7 @@ function nextListen(count){
 }
 function checkListen(){
   if(state.listen.done) return;
+  hideHint("l");
   const inp = $("l-input");
   const cleaned = inp.value.replace(/[\s.,]/g,"");
   if(cleaned==="") { flashWrong(inp); return; }
@@ -824,22 +849,26 @@ function checkListen(){
     $("l-reveal").textContent = fmt(state.listen.num) + " — " + greekNumber(state.listen.num);
     $("l-check").classList.add("hiddenbtn");
     $("l-show").classList.add("hiddenbtn");
+    $("l-hintbtn").classList.add("hiddenbtn");
     $("l-next").classList.remove("hiddenbtn");
   }else{
     state.listen.errors++;
     updateScore("listen");
     flashWrong(inp);
     const fb = $("l-fb"); fb.textContent = "✗ Неправильно, попробуй еще"; fb.className = "feedback err";
+    $("l-hintbtn").classList.remove("hiddenbtn");
     $("l-show").classList.remove("hiddenbtn");
   }
 }
 function revealListen(){
   state.listen.done = true;
+  hideHint("l");
   $("l-reveal").textContent = fmt(state.listen.num) + " — " + greekNumber(state.listen.num);
   $("l-input").disabled = true;
   $("l-fb").textContent = "";
   $("l-check").classList.add("hiddenbtn");
   $("l-show").classList.add("hiddenbtn");
+  $("l-hintbtn").classList.add("hiddenbtn");
   $("l-next").classList.remove("hiddenbtn");
 }
 function updateRateLabel(){
@@ -863,6 +892,7 @@ function nextRead(count){
 }
 function checkRead(){
   if(state.read.done) return;
+  hideHint("r");
   const inp = $("r-input");
   const cleaned = inp.value.replace(/[\s.,]/g,"");
   if(cleaned==="") { flashWrong(inp); return; }
@@ -875,23 +905,124 @@ function checkRead(){
     burst();
     $("r-check").classList.add("hiddenbtn");
     $("r-show").classList.add("hiddenbtn");
+    $("r-hintbtn").classList.add("hiddenbtn");
     $("r-next").classList.remove("hiddenbtn");
   }else{
     state.read.errors++;
     updateScore("read");
     flashWrong(inp);
     const fb = $("r-fb"); fb.textContent = "✗ Неправильно, попробуй еще"; fb.className = "feedback err";
+    $("r-hintbtn").classList.remove("hiddenbtn");
     $("r-show").classList.remove("hiddenbtn");
   }
 }
 function revealRead(){
   state.read.done = true;
+  hideHint("r");
   $("r-reveal").textContent = fmt(state.read.num);
   $("r-input").disabled = true;
   $("r-fb").textContent = "";
   $("r-check").classList.add("hiddenbtn");
   $("r-show").classList.add("hiddenbtn");
+  $("r-hintbtn").classList.add("hiddenbtn");
   $("r-next").classList.remove("hiddenbtn");
+}
+
+/* ================= HINTS ================= */
+function escHTML(s){
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+/* Выравнивание Левенштейна посимвольно. Возвращает токены:
+   {ch, ok} — символ пользователя; пропущенный символ ответа отображается
+   как красный "_" */
+function charDiff(user, correct){
+  const a = [...user], b = [...correct], m = a.length, n = b.length;
+  const eq = (x,y)=> x.toLowerCase()===y.toLowerCase();
+  const dp = [];
+  for(let i=0;i<=m;i++){ dp.push(new Array(n+1)); dp[i][0]=i; }
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1,
+                          dp[i-1][j-1]+(eq(a[i-1],b[j-1])?0:1));
+  const out = [];
+  let i=m, j=n;
+  while(i>0 || j>0){
+    if(i>0 && j>0 && dp[i][j]===dp[i-1][j-1]+(eq(a[i-1],b[j-1])?0:1)){
+      out.unshift({ch:a[i-1], ok:eq(a[i-1],b[j-1])}); i--; j--;
+    }else if(i>0 && dp[i][j]===dp[i-1][j]+1){
+      out.unshift({ch:a[i-1], ok:false}); i--;      // лишний символ
+    }else{
+      out.unshift({ch:"_", ok:false}); j--;         // пропущенный символ
+    }
+  }
+  return out;
+}
+function renderDiff(parts){
+  return parts.map(p => p.ok ? escHTML(p.ch) : '<span class="wr">'+escHTML(p.ch)+'</span>').join("");
+}
+function hintDigits(user, correct){
+  if(!user) return '<span class="wr">'+"_".repeat(correct.length)+'</span>';
+  return renderDiff(charDiff(user, correct));
+}
+/* Для греческого: сначала выравниваем слова; совпадение слов проверяем
+   через normGreek (разговорные варианты не считаются ошибкой). Слово,
+   неправильное более чем наполовину, подсвечивается целиком. */
+function hintGreek(userRaw, correct){
+  const uWords = userRaw.trim().replace(/\s+/g," ").split(" ").filter(w=>w);
+  const cWords = correct.split(" ");
+  const same = (x,y)=> normGreek(x)===normGreek(y);
+  const m = uWords.length, n = cWords.length;
+  const dp = [];
+  for(let i=0;i<=m;i++){ dp.push(new Array(n+1)); dp[i][0]=i; }
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1,
+                          dp[i-1][j-1]+(same(uWords[i-1],cWords[j-1])?0:1));
+  const parts = [];
+  let i=m, j=n;
+  while(i>0 || j>0){
+    if(i>0 && j>0 && dp[i][j]===dp[i-1][j-1]+(same(uWords[i-1],cWords[j-1])?0:1)){
+      const u = uWords[i-1], c = cWords[j-1];
+      if(same(u,c)) parts.unshift(escHTML(u));
+      else{
+        const d = charDiff(u, c);
+        const bad = d.filter(p=>!p.ok).length;
+        if(bad*2 > Math.max([...u].length, [...c].length))
+          parts.unshift('<span class="wr">'+escHTML(u)+'</span>'); // слово неправильное целиком
+        else
+          parts.unshift(renderDiff(d));
+      }
+      i--; j--;
+    }else if(i>0 && dp[i][j]===dp[i-1][j]+1){
+      parts.unshift('<span class="wr">'+escHTML(uWords[i-1])+'</span>'); i--; // лишнее слово
+    }else{
+      parts.unshift('<span class="wr">___</span>'); j--; // пропущенное слово
+    }
+  }
+  return parts.join(" ");
+}
+/* Показ подсветки «в поле»: input подменяется блоком-двойником с теми же
+   стилями; клик по нему (продолжение ввода) возвращает обычное поле. */
+function showHint(mode){
+  const p = {write:"w", listen:"l", read:"r"}[mode];
+  const inp = $(p+"-input"), lay = $(p+"-hintlay");
+  lay.innerHTML = (mode==="write")
+    ? hintGreek(inp.value, greekNumber(state[mode].num))
+    : hintDigits(inp.value.replace(/[\s.,]/g,""), String(state[mode].num));
+  inp.style.display = "none";
+  lay.style.display = "block";
+}
+function hideHint(p, focus){
+  const lay = $(p+"-hintlay"), inp = $(p+"-input");
+  if(lay.style.display === "none" || !lay.style.display) return;
+  lay.style.display = "none";
+  // без класса wrong скрытый input при повторном показе
+  // не проигрывает анимацию ошибки заново
+  inp.classList.remove("wrong");
+  inp.style.display = "";
+  if(focus) inp.focus();
 }
 
 /* ================= EFFECTS ================= */
