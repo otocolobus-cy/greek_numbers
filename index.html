@@ -157,6 +157,7 @@ input.ans.right{border-color:var(--ok);}
 .feedback.err{color:var(--err);}
 @keyframes pop{0%{transform:scale(.5); opacity:0;} 70%{transform:scale(1.15);} 100%{transform:scale(1); opacity:1;}}
 .revealed{margin-top:8px; font-size:1.15rem; font-weight:700; color:var(--accent); line-height:1.5;}
+.revealed .cr{color:var(--ok);} /* символы, где пользователь ошибся */
 /* подсветка ошибок прямо «в поле»: блок-двойник, подменяющий input */
 .hintlay{display:none; cursor:text; word-break:break-word; border-color:var(--err);}
 .hintlay .wr{color:var(--err);}
@@ -813,7 +814,7 @@ function checkWrite(){
 function revealWrite(){
   state.write.done = true;
   hideHint("w");
-  $("w-reveal").textContent = greekNumber(state.write.num);
+  $("w-reveal").innerHTML = answerGreekHTML($("w-input").value, greekNumber(state.write.num));
   $("w-input").disabled = true;
   $("w-fb").textContent = "";
   $("w-check").classList.add("hiddenbtn");
@@ -863,7 +864,9 @@ function checkListen(){
 function revealListen(){
   state.listen.done = true;
   hideHint("l");
-  $("l-reveal").textContent = fmt(state.listen.num) + " — " + greekNumber(state.listen.num);
+  const lu = $("l-input").value.replace(/[\s.,]/g,"");
+  $("l-reveal").innerHTML = answerDigitsHTML(lu, String(state.listen.num), fmt(state.listen.num))
+                            + " — " + escHTML(greekNumber(state.listen.num));
   $("l-input").disabled = true;
   $("l-fb").textContent = "";
   $("l-check").classList.add("hiddenbtn");
@@ -919,7 +922,8 @@ function checkRead(){
 function revealRead(){
   state.read.done = true;
   hideHint("r");
-  $("r-reveal").textContent = fmt(state.read.num);
+  const ru = $("r-input").value.replace(/[\s.,]/g,"");
+  $("r-reveal").innerHTML = answerDigitsHTML(ru, String(state.read.num), fmt(state.read.num));
   $("r-input").disabled = true;
   $("r-fb").textContent = "";
   $("r-check").classList.add("hiddenbtn");
@@ -999,6 +1003,85 @@ function hintGreek(userRaw, correct){
       parts.unshift('<span class="wr">'+escHTML(uWords[i-1])+'</span>'); i--; // лишнее слово
     }else{
       parts.unshift('<span class="wr">___</span>'); j--; // пропущенное слово
+    }
+  }
+  return parts.join(" ");
+}
+/* Обратный диф: разметка ПРАВИЛЬНОГО ответа — какие его символы пользователь
+   ввел неверно или пропустил (лишние символы пользователя не отмечаются) */
+function answerDiff(user, correct){
+  const a = [...user], b = [...correct], m = a.length, n = b.length;
+  const eq = (x,y)=> x.toLowerCase()===y.toLowerCase();
+  const dp = [];
+  for(let i=0;i<=m;i++){ dp.push(new Array(n+1)); dp[i][0]=i; }
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1,
+                          dp[i-1][j-1]+(eq(a[i-1],b[j-1])?0:1));
+  const out = [];
+  let i=m, j=n;
+  while(i>0 || j>0){
+    if(i>0 && j>0 && dp[i][j]===dp[i-1][j-1]+(eq(a[i-1],b[j-1])?0:1)){
+      out.unshift({ch:b[j-1], wrong:!eq(a[i-1],b[j-1])}); i--; j--;
+    }else if(i>0 && dp[i][j]===dp[i-1][j]+1){
+      i--;                                   // лишний символ пользователя
+    }else{
+      out.unshift({ch:b[j-1], wrong:true}); j--; // пропущенный символ
+    }
+  }
+  return out;
+}
+function renderAnswer(parts){
+  return parts.map(p => p.wrong ? '<span class="cr">'+escHTML(p.ch)+'</span>' : escHTML(p.ch)).join("");
+}
+/* Правильный ответ цифрами: зеленые отметки переносятся на форматированную
+   запись (с разделителями тысяч) */
+function answerDigitsHTML(user, numStr, formatted){
+  if(!user) return escHTML(formatted);
+  const parts = answerDiff(user, numStr);
+  let k = 0, html = "";
+  for(const ch of formatted){
+    if(/\d/.test(ch)){
+      const t = parts[k++];
+      html += t.wrong ? '<span class="cr">'+ch+'</span>' : ch;
+    }else html += escHTML(ch);
+  }
+  return html;
+}
+/* Правильный ответ по-гречески с зелеными отметками ошибок пользователя */
+function answerGreekHTML(userRaw, correct){
+  const uWords = userRaw.trim().replace(/\s+/g," ").split(" ").filter(w=>w);
+  if(!uWords.length) return escHTML(correct);
+  const cWords = correct.split(" ");
+  const same = (x,y)=> normGreek(x)===normGreek(y);
+  const m = uWords.length, n = cWords.length;
+  const dp = [];
+  for(let i=0;i<=m;i++){ dp.push(new Array(n+1)); dp[i][0]=i; }
+  for(let j=0;j<=n;j++) dp[0][j]=j;
+  for(let i=1;i<=m;i++)
+    for(let j=1;j<=n;j++)
+      dp[i][j] = Math.min(dp[i-1][j]+1, dp[i][j-1]+1,
+                          dp[i-1][j-1]+(same(uWords[i-1],cWords[j-1])?0:1));
+  const parts = [];
+  let i=m, j=n;
+  while(i>0 || j>0){
+    if(i>0 && j>0 && dp[i][j]===dp[i-1][j-1]+(same(uWords[i-1],cWords[j-1])?0:1)){
+      const u = uWords[i-1], c = cWords[j-1];
+      if(same(u,c)) parts.unshift(escHTML(c));
+      else{
+        const d = answerDiff(u, c);
+        const bad = d.filter(p=>p.wrong).length;
+        if(bad*2 > Math.max([...u].length, [...c].length))
+          parts.unshift('<span class="cr">'+escHTML(c)+'</span>');
+        else
+          parts.unshift(renderAnswer(d));
+      }
+      i--; j--;
+    }else if(i>0 && dp[i][j]===dp[i-1][j]+1){
+      i--;                                                    // лишнее слово
+    }else{
+      parts.unshift('<span class="cr">'+escHTML(cWords[j-1])+'</span>'); j--; // пропущенное
     }
   }
   return parts.join(" ");
