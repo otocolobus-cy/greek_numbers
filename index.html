@@ -138,7 +138,26 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
 }
 .quizcard .qnum{font-size:2.4rem; font-weight:800; word-break:break-all;}
 .quizcard .qtext{font-size:1.4rem; font-weight:700; color:var(--accent); line-height:1.5;}
-.answer-row{margin-top:18px;}
+.answer-row{margin-top:18px; display:flex; gap:8px; align-items:center;}
+.answer-row .ans{flex:1; min-width:0;}
+/* экранная клавиатура */
+.kbbtn{
+  width:46px; height:46px; border-radius:10px; border:1px solid var(--border);
+  background:var(--chipbg); color:var(--text); font-size:1.2rem; cursor:pointer;
+  flex-shrink:0; transition:transform .1s;
+}
+.kbbtn:active{transform:scale(.94);}
+.kbbtn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+.kbpanel{display:none; margin-top:14px; user-select:none; -webkit-user-select:none;}
+.kbpanel.open{display:block;}
+.kbrow{display:flex; gap:6px; justify-content:center; margin-top:6px;}
+.kbkey{
+  flex:1; min-width:0; max-width:56px; padding:11px 0; border-radius:8px;
+  border:1px solid var(--border); background:var(--chipbg); color:var(--text);
+  font:inherit; font-size:1.05rem; cursor:pointer;
+}
+.kbkey:active{background:var(--accent); color:#fff;}
+.kbkey.wide{max-width:220px; flex:4; font-size:.85rem; color:var(--muted);}
 .ans{
   width:100%; padding:14px; font-size:1.05rem; text-align:center;
   border:2px solid var(--border); border-radius:12px; background:var(--bg); color:var(--text);
@@ -162,6 +181,30 @@ input.ans.right{border-color:var(--ok);}
 .hintlay{display:none; cursor:text; word-break:break-word; border-color:var(--err);}
 .hintlay .wr{color:var(--err);}
 .btnrow-lower{margin-top:10px;}
+/* переключатель экранной клавиатуры */
+.kbdtoggle{
+  flex-shrink:0; width:48px; align-self:stretch; border:2px solid var(--border);
+  border-radius:12px; background:var(--bg); color:var(--text);
+  cursor:pointer; transition:border-color .15s, background .15s;
+  display:flex; align-items:center; justify-content:center;
+}
+.kbdtoggle svg{display:block;}
+.kbdtoggle.on{border-color:var(--accent); background:var(--chipbg);}
+/* экранная клавиатура */
+.kbd{display:none; margin-top:14px;}
+.kbd.open{display:block;}
+.kbd .krow{display:flex; justify-content:center; gap:6px; margin-bottom:6px;}
+.kbd .key{
+  flex:1; max-width:52px; min-width:0; height:46px; border:1px solid var(--border);
+  border-radius:9px; background:var(--card); color:var(--text); font:inherit;
+  font-size:1.15rem; cursor:pointer; box-shadow:0 1px 2px rgba(0,0,0,.08);
+  display:flex; align-items:center; justify-content:center; user-select:none;
+}
+.kbd .key:active{background:var(--chipbg); transform:translateY(1px);}
+.kbd .key.accent{color:var(--accent); font-weight:700;}
+.kbd .key.kspace{flex:0 0 auto; width:min(200px,60%); max-width:none;}
+.kbd .key.spacer{visibility:hidden; pointer-events:none; box-shadow:none;}
+.kbd[data-type="digits"] .key{max-width:88px; height:52px; font-size:1.35rem; font-weight:700;}
 .btnrow{display:flex; gap:10px; justify-content:center; margin-top:16px; flex-wrap:wrap;}
 .btn{
   border:none; border-radius:12px; padding:13px 22px; font:inherit; font-size:.95rem;
@@ -323,6 +366,7 @@ body.tts .refitem{cursor:pointer;}
         <input class="ans" id="w-input" lang="el" placeholder="напиши по-гречески…"
                autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false">
         <div class="ans hintlay" id="w-hintlay" onclick="hideHint('w', true)"></div>
+        <button class="kbdtoggle" id="w-kbdbtn" title="Экранная клавиатура" onclick="toggleKbd('w')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="5" width="21" height="14" rx="2.5"/><g fill="currentColor" stroke="none"><rect x="3.8" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="6.55" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="9.3" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="12.05" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="14.8" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="17.55" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="3.8" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="6.55" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="9.3" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="12.05" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="14.8" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="17.55" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="3.8" y="14.4" width="1.7" height="1.7" rx="0.3"/><rect x="7" y="14.4" width="9.25" height="1.7" rx="0.4"/><rect x="17.55" y="14.4" width="1.7" height="1.7" rx="0.3"/></g></svg></button>
       </div>
       <div class="feedback" id="w-fb"></div>
       <div class="revealed" id="w-reveal"></div>
@@ -335,6 +379,7 @@ body.tts .refitem{cursor:pointer;}
       <div class="btnrow btnrow-lower">
         <button class="btn ghost hiddenbtn" id="w-show" onclick="revealWrite()">Показать ответ</button>
       </div>
+      <div class="kbd" id="w-kbd" data-type="greek"></div>
     </div>
   </div>
 
@@ -367,6 +412,7 @@ body.tts .refitem{cursor:pointer;}
         <input class="ans" id="l-input" inputmode="numeric" placeholder="введи цифрами…"
                autocomplete="off" spellcheck="false">
         <div class="ans hintlay" id="l-hintlay" onclick="hideHint('l', true)"></div>
+        <button class="kbdtoggle" id="l-kbdbtn" title="Экранная клавиатура" onclick="toggleKbd('l')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="5" width="21" height="14" rx="2.5"/><g fill="currentColor" stroke="none"><rect x="3.8" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="6.55" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="9.3" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="12.05" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="14.8" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="17.55" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="3.8" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="6.55" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="9.3" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="12.05" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="14.8" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="17.55" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="3.8" y="14.4" width="1.7" height="1.7" rx="0.3"/><rect x="7" y="14.4" width="9.25" height="1.7" rx="0.4"/><rect x="17.55" y="14.4" width="1.7" height="1.7" rx="0.3"/></g></svg></button>
       </div>
       <div class="feedback" id="l-fb"></div>
       <div class="revealed" id="l-reveal"></div>
@@ -378,6 +424,7 @@ body.tts .refitem{cursor:pointer;}
       <div class="btnrow btnrow-lower">
         <button class="btn ghost hiddenbtn" id="l-show" onclick="revealListen()">Показать ответ</button>
       </div>
+      <div class="kbd" id="l-kbd" data-type="digits"></div>
     </div>
   </div>
 
@@ -407,6 +454,7 @@ body.tts .refitem{cursor:pointer;}
         <input class="ans" id="r-input" inputmode="numeric" placeholder="введи цифрами…"
                autocomplete="off" spellcheck="false">
         <div class="ans hintlay" id="r-hintlay" onclick="hideHint('r', true)"></div>
+        <button class="kbdtoggle" id="r-kbdbtn" title="Экранная клавиатура" onclick="toggleKbd('r')"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="1.5" y="5" width="21" height="14" rx="2.5"/><g fill="currentColor" stroke="none"><rect x="3.8" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="6.55" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="9.3" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="12.05" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="14.8" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="17.55" y="7.9" width="1.7" height="1.7" rx="0.3"/><rect x="3.8" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="6.55" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="9.3" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="12.05" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="14.8" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="17.55" y="11.15" width="1.7" height="1.7" rx="0.3"/><rect x="3.8" y="14.4" width="1.7" height="1.7" rx="0.3"/><rect x="7" y="14.4" width="9.25" height="1.7" rx="0.4"/><rect x="17.55" y="14.4" width="1.7" height="1.7" rx="0.3"/></g></svg></button>
       </div>
       <div class="feedback" id="r-fb"></div>
       <div class="revealed" id="r-reveal"></div>
@@ -418,6 +466,7 @@ body.tts .refitem{cursor:pointer;}
       <div class="btnrow btnrow-lower">
         <button class="btn ghost hiddenbtn" id="r-show" onclick="revealRead()">Показать ответ</button>
       </div>
+      <div class="kbd" id="r-kbd" data-type="digits"></div>
     </div>
   </div>
 
@@ -1107,6 +1156,103 @@ function hideHint(p, focus){
   inp.style.display = "";
   if(focus) inp.focus();
 }
+
+/* ================= ON-SCREEN KEYBOARD ================= */
+const KBD_LAYOUTS = {
+  greek: [
+    ["ε","ρ","τ","υ","θ","ι","ο","π"],
+    ["α","σ","δ","φ","γ","η","ξ","κ","λ"],
+    ["ζ","χ","ψ","ω","β","ν","μ","ς"],
+    ["ά","έ","ή","ί","ό","ύ","ώ"]
+  ],
+  digits: [
+    ["1","2","3"],
+    ["4","5","6"],
+    ["7","8","9"],
+    ["0"]
+  ]
+};
+function kbdInsert(p, ch){
+  const inp = $(p+"-input");
+  if(inp.disabled) return;
+  hideHint(p);
+  const s = inp.selectionStart ?? inp.value.length;
+  const e = inp.selectionEnd ?? inp.value.length;
+  inp.value = inp.value.slice(0,s) + ch + inp.value.slice(e);
+  const pos = s + ch.length;
+  inp.focus();
+  try{ inp.setSelectionRange(pos,pos); }catch(err){}
+  inp.dispatchEvent(new Event("input"));
+}
+function kbdBackspace(p){
+  const inp = $(p+"-input");
+  if(inp.disabled) return;
+  hideHint(p);
+  let s = inp.selectionStart ?? inp.value.length;
+  let e = inp.selectionEnd ?? inp.value.length;
+  if(s===e){ if(s===0) return; s = s-1; }        // удалить символ перед курсором
+  inp.value = inp.value.slice(0,s) + inp.value.slice(e);
+  inp.focus();
+  try{ inp.setSelectionRange(s,s); }catch(err){}
+  inp.dispatchEvent(new Event("input"));
+}
+function makeKey(p, label, cls, onpress){
+  const b = document.createElement("button");
+  b.className = "key" + (cls ? " "+cls : "");
+  b.textContent = label;
+  b.type = "button";
+  // удерживаем фокус в поле, чтобы не всплывала системная клавиатура и не терялся курсор
+  b.addEventListener("pointerdown", e => e.preventDefault());
+  b.addEventListener("mousedown", e => e.preventDefault());
+  b.addEventListener("click", onpress);
+  return b;
+}
+function makeSpacer(){
+  const d = document.createElement("div");
+  d.className = "key spacer";
+  return d;
+}
+function buildKeyboard(p){
+  const box = $(p+"-kbd");
+  const type = box.dataset.type;
+  box.innerHTML = "";
+  KBD_LAYOUTS[type].forEach((row,ri)=>{
+    const r = document.createElement("div");
+    r.className = "krow";
+    row.forEach(ch=>{
+      const accent = type==="greek" && "άέήίόύώ".includes(ch);
+      r.appendChild(makeKey(p, ch, accent ? "accent" : "", ()=> kbdInsert(p, ch)));
+    });
+    if(type==="greek" && ri===3){
+      // backspace справа от «ώ», обычного размера
+      r.appendChild(makeKey(p, "⌫", "", ()=> kbdBackspace(p)));
+    }
+    if(type==="digits" && ri===3){
+      // ряд «0 ⌫»: спейсер слева, чтобы «0» встал под 8, а ⌫ — в угол под 9
+      r.insertBefore(makeSpacer(), r.firstChild);
+      r.appendChild(makeKey(p, "⌫", "", ()=> kbdBackspace(p)));
+    }
+    box.appendChild(r);
+  });
+  if(type==="greek"){
+    // нижний ряд: пробел по центру
+    const ctl = document.createElement("div");
+    ctl.className = "krow";
+    ctl.appendChild(makeKey(p, "пробел", "kspace", ()=> kbdInsert(p, " ")));
+    box.appendChild(ctl);
+  }
+}
+function toggleKbd(p){
+  const box = $(p+"-kbd"), btn = $(p+"-kbdbtn");
+  const open = box.classList.toggle("open");
+  btn.classList.toggle("on", open);
+  if(open){
+    const inp = $(p+"-input");
+    if(!inp.disabled) inp.focus();
+    box.scrollIntoView({behavior:"smooth", block:"nearest"});
+  }
+}
+["w","l","r"].forEach(buildKeyboard);
 
 /* ================= EFFECTS ================= */
 function flashWrong(inp){
