@@ -686,11 +686,14 @@ function applyRange(mode){
   saveSettings();
   syncRangeUI(mode);
   if(!changed) return;
-  // новое число без учета в статистике показов
+  // Если по текущему вопросу уже была попытка ответа (верная, неверная или
+  // показ ответа), новое число — это следующий вопрос, и его нужно засчитать
+  // в «Показано». Иначе (вопрос ещё не тронут) просто заменяем число.
+  const count = st.attempted === true;
   if(mode==="cards") nextCard(false);
-  else if(mode==="write") nextWrite(false);
-  else if(mode==="listen") nextListen(false);
-  else nextRead(false);
+  else if(mode==="write") nextWrite(count);
+  else if(mode==="listen") nextListen(count);
+  else nextRead(count);
 }
 function initRange(mode){
   syncRangeUI(mode);
@@ -828,7 +831,7 @@ function resetQuizUI(p){
 function nextWrite(count){
   const n = newNumber("write");
   if(count !== false) state.write.shown++;
-  state.write.done=false;
+  state.write.done=false; state.write.attempted=false;
   updateScore("write");
   resetQuizUI("w");
   $("w-num").textContent = fmt(n);
@@ -839,6 +842,7 @@ function checkWrite(){
   hideHint("w");
   const inp = $("w-input");
   if(!inp.value.trim()) { flashWrong(inp); return; }
+  state.write.attempted = true;
   if(checkGreekAnswer(inp.value, state.write.num)){
     state.write.done = true;
     state.write.correct++;
@@ -861,7 +865,7 @@ function checkWrite(){
   }
 }
 function revealWrite(){
-  state.write.done = true;
+  state.write.done = true; state.write.attempted = true;
   hideHint("w");
   $("w-reveal").innerHTML = answerGreekHTML($("w-input").value, greekNumber(state.write.num));
   $("w-input").disabled = true;
@@ -877,7 +881,7 @@ function revealWrite(){
 function nextListen(count){
   const n = newNumber("listen");
   if(count !== false) state.listen.shown++;
-  state.listen.done=false;
+  state.listen.done=false; state.listen.attempted=false;
   updateScore("listen");
   resetQuizUI("l");
   $("l-input").focus();
@@ -889,6 +893,7 @@ function checkListen(){
   const inp = $("l-input");
   const cleaned = inp.value.replace(/[\s.,]/g,"");
   if(cleaned==="") { flashWrong(inp); return; }
+  state.listen.attempted = true;
   if(/^\d+$/.test(cleaned) && parseInt(cleaned,10)===state.listen.num){
     state.listen.done = true;
     state.listen.correct++;
@@ -911,7 +916,7 @@ function checkListen(){
   }
 }
 function revealListen(){
-  state.listen.done = true;
+  state.listen.done = true; state.listen.attempted = true;
   hideHint("l");
   const lu = $("l-input").value.replace(/[\s.,]/g,"");
   $("l-reveal").innerHTML = answerDigitsHTML(lu, String(state.listen.num), fmt(state.listen.num))
@@ -936,7 +941,7 @@ $("l-rate").addEventListener("input", ()=>{
 function nextRead(count){
   const n = newNumber("read");
   if(count !== false) state.read.shown++;
-  state.read.done=false;
+  state.read.done=false; state.read.attempted=false;
   updateScore("read");
   resetQuizUI("r");
   $("r-text").textContent = greekNumber(n);
@@ -948,6 +953,7 @@ function checkRead(){
   const inp = $("r-input");
   const cleaned = inp.value.replace(/[\s.,]/g,"");
   if(cleaned==="") { flashWrong(inp); return; }
+  state.read.attempted = true;
   if(/^\d+$/.test(cleaned) && parseInt(cleaned,10)===state.read.num){
     state.read.done = true;
     state.read.correct++;
@@ -969,7 +975,7 @@ function checkRead(){
   }
 }
 function revealRead(){
-  state.read.done = true;
+  state.read.done = true; state.read.attempted = true;
   hideHint("r");
   const ru = $("r-input").value.replace(/[\s.,]/g,"");
   $("r-reveal").innerHTML = answerDigitsHTML(ru, String(state.read.num), fmt(state.read.num));
