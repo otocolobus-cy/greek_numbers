@@ -7,21 +7,27 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#2563c9">
+<meta name="theme-color" content="#2563eb">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Αριθμοί">
 <style>
+/* Палитра — общая с тренажёром глаголов (greek_verbs_trainer, site/style.css): те же фон, поверхности, акцент,
+   «верно» и «ошибка» в обеих темах. Меняется там — меняется и здесь */
 :root{
-  --bg:#f2f4f8; --card:#ffffff; --text:#1c2333; --muted:#6b7387;
-  --accent:#2563c9; --accent2:#0d9488; --border:#dde2ec;
-  --ok:#16a34a; --err:#dc2626; --shadow:0 4px 18px rgba(30,41,59,.08);
-  --chipbg:#e8edf6;
+  --bg:#f6f7f9; --card:#ffffff; --text:#1c2330; --muted:#5d6878;
+  --accent:#2563eb; --accent2:#15803d; --border:#dde2ea;
+  --ok:#15803d; --err:#b91c1c; --shadow:0 1px 2px rgba(16,24,40,.06), 0 6px 20px rgba(16,24,40,.07);
+  --chipbg:#eef1f5; --accent-soft:#e3ecfd;
+  --on-accent:#fff; /* текст на залитой акцентом кнопке */
+  color-scheme:light;
 }
 html[data-theme="dark"]{
-  --bg:#12151d; --card:#1c2230; --text:#e7eaf2; --muted:#8b93a7;
-  --accent:#5b9dff; --accent2:#2dd4bf; --border:#2c3446;
-  --ok:#4ade80; --err:#f87171; --shadow:0 4px 18px rgba(0,0,0,.35);
-  --chipbg:#252d40;
+  --bg:#1b1f26; --card:#232831; --text:#d4d8de; --muted:#9aa3af;
+  --accent:#8eaae0; --accent2:#86c09d; --border:#353c48;
+  --ok:#86c09d; --err:#e09090; --shadow:0 1px 2px rgba(0,0,0,.25), 0 8px 24px rgba(0,0,0,.22);
+  --chipbg:#2b313b; --accent-soft:#2b3650;
+  --on-accent:#232831; /* акцент в тёмной теме светлый — белое на нём не читалось бы */
+  color-scheme:dark;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 body{
@@ -32,7 +38,34 @@ body{
 .wrap{max-width:560px; margin:0 auto; padding:16px 16px 40px;}
 header{display:flex; align-items:center; justify-content:space-between; padding:8px 0 4px;}
 header h1{font-size:1.15rem; margin:0; font-weight:700;}
-header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
+header .sub{color:var(--muted); font-size:.8rem; margin-top:2px; display:block; font-weight:400;}
+.brand-name{display:block;}
+/* меню тренажёров под названием — то же, что в тренажёре глаголов */
+.brand-wrap{position:relative; min-width:0;}
+.brand-btn{
+  display:flex; align-items:center; gap:10px; padding:4px 10px 4px 6px; margin-left:-6px;
+  border:0; border-radius:12px; background:none; color:inherit; font:inherit; text-align:left; cursor:pointer;
+}
+.brand-btn:hover,.brand-btn[aria-expanded="true"]{background:var(--chipbg);}
+.brand-caret{
+  flex:none; width:7px; height:7px; margin-top:-4px;
+  border:solid var(--muted); border-width:0 1.8px 1.8px 0; transform:rotate(45deg);
+}
+.apps-menu{
+  position:absolute; z-index:40; top:calc(100% + 6px); left:-6px; min-width:230px; margin:0; padding:6px;
+  list-style:none; background:var(--card); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow);
+}
+.apps-menu[hidden]{display:none;}
+.app-item{
+  display:flex; justify-content:space-between; gap:12px; padding:9px 10px; border-radius:8px;
+  color:var(--text); text-decoration:none; font-size:.95rem; font-weight:500;
+}
+a.app-item:hover{background:var(--chipbg); color:var(--accent);}
+.app-cur{color:var(--accent); font-weight:650;}
+.app-cur::after{content:"✓";}
+/* символ темы — тем же шрифтом и размером, что в тренажёре глаголов: у кнопки без шрифта браузер брал Arial,
+   и месяц «☾» в нём нарисован иначе */
+#themeBtn{font:400 .9rem/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;}
 .iconbtn{
   background:var(--card); border:1px solid var(--border); color:var(--text);
   width:44px; height:44px; border-radius:12px; cursor:pointer; font-size:1.25rem;
@@ -147,7 +180,7 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
   flex-shrink:0; transition:transform .1s;
 }
 .kbbtn:active{transform:scale(.94);}
-.kbbtn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+.kbbtn.active{background:var(--accent); color:var(--on-accent); border-color:var(--accent);}
 .kbpanel{display:none; margin-top:14px; user-select:none; -webkit-user-select:none;}
 .kbpanel.open{display:block;}
 .kbrow{display:flex; gap:6px; justify-content:center; margin-top:6px;}
@@ -156,7 +189,7 @@ header .sub{color:var(--muted); font-size:.8rem; margin-top:2px;}
   border:1px solid var(--border); background:var(--chipbg); color:var(--text);
   font:inherit; font-size:1.05rem; cursor:pointer;
 }
-.kbkey:active{background:var(--accent); color:#fff;}
+.kbkey:active{background:var(--accent); color:var(--on-accent);}
 .kbkey.wide{max-width:220px; flex:4; font-size:.85rem; color:var(--muted);}
 .ans{
   width:100%; padding:14px; font-size:1.05rem; text-align:center;
@@ -211,7 +244,7 @@ input.ans.right{border-color:var(--ok);}
   font-weight:700; cursor:pointer; transition:transform .1s;
 }
 .btn:active{transform:scale(.97);}
-.btn.primary{background:var(--accent); color:#fff;}
+.btn.primary{background:var(--accent); color:var(--on-accent);}
 .btn.ghost{background:var(--chipbg); color:var(--text);}
 .hiddenbtn{display:none !important;}
 
@@ -237,7 +270,7 @@ input.ans.right{border-color:var(--ok);}
 /* аудирование */
 .playbtn{
   width:76px; height:76px; border-radius:50%; border:none;
-  background:var(--accent); color:#fff; font-size:2rem; cursor:pointer;
+  background:var(--accent); color:var(--on-accent); font-size:2rem; cursor:pointer;
   box-shadow:var(--shadow); transition:transform .1s;
 }
 .playbtn:active{transform:scale(.93);}
@@ -271,11 +304,23 @@ body.tts .refitem{cursor:pointer;}
 <body>
 <div class="wrap">
   <header>
-    <div>
-      <h1>Ελληνικά αριθμητικά</h1>
-      <div class="sub">Тренажер греческих числительных</div>
+    <!-- Название — меню тренажёров, как в тренажёре глаголов: соседний сайт в одно нажатие, места не занимает -->
+    <div class="brand-wrap">
+      <h1>
+        <button type="button" class="brand-btn" id="appsBtn" aria-haspopup="true" aria-expanded="false" aria-controls="appsMenu" title="Другие тренажёры">
+          <span>
+            <span class="brand-name">Ελληνικά αριθμητικά</span>
+            <span class="sub">Тренажер греческих числительных</span>
+          </span>
+          <span class="brand-caret" aria-hidden="true"></span>
+        </button>
+      </h1>
+      <ul class="apps-menu" id="appsMenu" hidden>
+        <li><a class="app-item" href="https://otocolobus-cy.github.io/greek_verbs_trainer/">Греческие глаголы <span aria-hidden="true">↗</span></a></li>
+        <li><span class="app-item app-cur" aria-current="page">Греческие числа</span></li>
+      </ul>
     </div>
-    <button class="iconbtn" id="themeBtn" title="Дневной / ночной режим">☀️</button>
+    <button class="iconbtn" id="themeBtn" title="Дневной / ночной режим">☀</button>
   </header>
 
   <!-- MAIN MENU -->
@@ -1381,20 +1426,47 @@ function saveSettings(){
 })();
 
 /* ================= THEME ================= */
+// Три положения, как в тренажёре глаголов: «как в системе» → светлая → тёмная. Значки — однотонные символы,
+// а не цветные эмодзи. В «как в системе» тему выбирает системная настройка и следует за ней (вечером
+// телефон переключился на тёмную — переключилась и страница); стили по-прежнему смотрят только на data-theme
+const THEMES = { auto:["◐","Тема: как в системе"], light:["☀","Тема: светлая"], dark:["☾","Тема: тёмная"] };
+const THEME_ORDER = ["auto","light","dark"];
+const darkMq = matchMedia("(prefers-color-scheme: dark)");
+let themePref = "auto";
 function setTheme(t){
-  document.documentElement.setAttribute("data-theme", t);
-  $("themeBtn").textContent = t==="dark" ? "🌙" : "☀️";
-  try{ localStorage.setItem("gnt-theme", t); }catch(e){}
+  themePref = THEMES[t] ? t : "auto";
+  const real = themePref==="auto" ? (darkMq.matches ? "dark" : "light") : themePref;
+  document.documentElement.setAttribute("data-theme", real);
+  const [icon, label] = THEMES[themePref];
+  $("themeBtn").textContent = icon;
+  $("themeBtn").title = label + " (нажмите, чтобы сменить)";
+  $("themeBtn").setAttribute("aria-label", label);
+  try{ localStorage.setItem("gnt-theme", themePref); }catch(e){}
 }
 $("themeBtn").onclick = ()=>{
-  const cur = document.documentElement.getAttribute("data-theme")==="dark" ? "light" : "dark";
-  setTheme(cur);
+  setTheme(THEME_ORDER[(THEME_ORDER.indexOf(themePref) + 1) % THEME_ORDER.length]);
 };
+// системная тема сменилась, пока страница открыта, — в «как в системе» следуем за ней
+const onSystemTheme = ()=>{ if(themePref==="auto") setTheme("auto"); };
+if(darkMq.addEventListener) darkMq.addEventListener("change", onSystemTheme); else darkMq.addListener(onSystemTheme);
+// подстраховка: событие смены приходит не всегда (вкладка в фоне) — перепроверяем, когда к ней вернулись
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden) onSystemTheme(); });
+window.addEventListener("focus", onSystemTheme);
 (function(){
-  let t = "light";
-  try{ t = localStorage.getItem("gnt-theme") || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"); }catch(e){}
+  let t = "auto";
+  try{ t = localStorage.getItem("gnt-theme") || "auto"; }catch(e){}
   setTheme(t);
 })();
+
+/* ================= МЕНЮ ТРЕНАЖЁРОВ ================= */
+// открывается нажатием на название, закрывается щелчком мимо и Esc — как в тренажёре глаголов
+function setApps(open){
+  $("appsMenu").hidden = !open;
+  $("appsBtn").setAttribute("aria-expanded", String(open));
+}
+$("appsBtn").addEventListener("click", (e)=>{ e.stopPropagation(); setApps($("appsMenu").hidden); });
+document.addEventListener("click", (e)=>{ if(!e.target.closest("#appsMenu")) setApps(false); });
+document.addEventListener("keydown", (e)=>{ if(e.key==="Escape") setApps(false); });
 
 buildRef();
 </script>
